@@ -1,0 +1,189 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  DISPATCHER
+}
+
+enum Carrier {
+  CDI
+  FORTIGO
+}
+
+enum ProductClass {
+  SIZE_2X4_6_8
+  SIZE_2X10_12
+  ALL
+}
+
+enum LoadStatus {
+  DRAFT
+  DISPATCHED
+  IN_TRANSIT
+  DELIVERED
+  CANCELLED
+}
+
+enum Equipment {
+  FLAT_DECK
+  BOX_VAN
+}
+
+enum EquipmentStyle {
+  SUPER_B
+  TRI_AXLE
+  TANDEM
+  MAXI
+  STEP_DECK_TROMBONE
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         Role     @default(DISPATCHER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  addressesCreated Address[]  @relation("AddressCreatedBy")
+  contactsCreated  Contact[]  @relation("ContactCreatedBy")
+  loadsCreated     Load[]     @relation("LoadCreatedBy")
+  loadsUpdated     Load[]     @relation("LoadUpdatedBy")
+  feeSettingsUpdates FeeSettings[] @relation("FeeSettingsUpdatedBy")
+  auditLogs        AuditLog[]
+}
+
+// Fee defaults for form prefill only. Fuel % is chosen per load — not stored here.
+model FeeSettings {
+  id              String   @id @default(cuid())
+  flatDeckCdi     Decimal
+  flatDeckFortigo Decimal
+  reloadFee       Decimal
+  restackFee      Decimal
+  blockingFee     Decimal
+  carbonTax       Decimal
+  effectiveFrom   DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  updatedById     String?
+  updatedBy       User?    @relation("FeeSettingsUpdatedBy", fields: [updatedById], references: [id])
+}
+
+model FreightRate {
+  id           String       @id @default(cuid())
+  destination  String
+  carrier      Carrier
+  productClass ProductClass
+  baseRate     Decimal
+  updatedAt    DateTime     @updatedAt
+
+  @@unique([destination, carrier, productClass])
+  @@index([destination])
+}
+
+model Address {
+  id          String   @id @default(cuid())
+  nickname    String
+  companyName String?
+  street      String
+  city        String
+  province    String
+  postalCode  String?
+  phone       String?
+  isFavorite  Boolean  @default(false)
+  createdById String
+  createdBy   User     @relation("AddressCreatedBy", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  loads       Load[]   @relation("LoadDeliveryAddress")
+}
+
+model Contact {
+  id          String   @id @default(cuid())
+  nickname    String
+  name        String
+  email       String
+  phone       String?
+  isFavorite  Boolean  @default(false)
+  createdById String
+  createdBy   User     @relation("ContactCreatedBy", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Load {
+  id              String       @id @default(cuid())
+  outboundNumber  String       @unique
+  inboundNumber   String?
+  status          LoadStatus   @default(DRAFT)
+  vanDropDate     DateTime
+
+  pickupCompany   String
+  pickupStreet    String
+  pickupCity      String
+  pickupProvince  String
+  pickupPostal    String?
+  pickupPhone     String?
+
+  destination       String
+  deliveryCompany   String?
+  deliveryStreet    String
+  deliveryCity      String
+  deliveryProvince  String
+  deliveryPostal    String?
+  deliveryRef       String?
+  deliveryAddressId String?
+  deliveryAddress   Address? @relation("LoadDeliveryAddress", fields: [deliveryAddressId], references: [id])
+
+  carrier      Carrier
+  productClass ProductClass
+  equipment    Equipment
+  equipmentStyle EquipmentStyle
+
+  crossDock    Boolean  @default(false)
+  crossDockFee Decimal?
+  restack      Boolean  @default(false)
+
+  loadContents String
+  weightLbs    Int?
+
+  baseRate              Decimal
+  fuelSurchargePercent  Decimal
+  fuelAmount            Decimal
+  flatDeckFee           Decimal
+  reloadFee             Decimal
+  restackFee            Decimal
+  blockingFee           Decimal
+  carbonTax             Decimal
+  crossDockAmount       Decimal
+  totalAmount           Decimal
+
+  createdById  String
+  updatedById  String
+  createdBy    User     @relation("LoadCreatedBy", fields: [createdById], references: [id])
+  updatedBy    User     @relation("LoadUpdatedBy", fields: [updatedById], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  dispatchedAt DateTime?
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  action     String
+  entityType String
+  entityId   String
+  details    Json?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([userId])
+}
