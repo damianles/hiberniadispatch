@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import { isMailConfigured } from "@/lib/mail";
 import { isSheetsConfigured } from "@/lib/google-sheets";
 
 export default async function RatesPage() {
@@ -19,7 +18,6 @@ export default async function RatesPage() {
         });
 
   const sheetsOk = isSheetsConfigured();
-  const mailOk = isMailConfigured();
   const sheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID?.trim();
   const sheetTab = process.env.GOOGLE_SHEETS_TAB_NAME?.trim() || "Loads";
 
@@ -98,9 +96,9 @@ export default async function RatesPage() {
             </dd>
           </div>
           <div className="flex flex-wrap items-center justify-between gap-2 py-2">
-            <dt>Dispatch email (Outlook)</dt>
-            <dd className={mailOk ? "text-sage-dark" : "text-burgundy"}>
-              {mailOk ? "Configured" : "Deferred — waiting on SMTP credentials"}
+            <dt>Dispatch email</dt>
+            <dd className="text-ink/55">
+              Manual for now — open PDF, attach in Outlook
             </dd>
           </div>
         </dl>

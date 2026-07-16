@@ -136,17 +136,33 @@ export default async function LoadDetailPage({
         </div>
 
         <div className="border border-line bg-white/80 p-5">
-          <h2 className="font-brand text-xl text-burgundy">Email dispatch</h2>
+          <h2 className="font-brand text-xl text-burgundy">Send dispatch</h2>
           <p className="mt-1 text-xs text-ink/50">
-            Sends the PDF to a saved contact or any email you enter.
+            For now: open the PDF, then attach it in Outlook to whoever you need.
+            In-app email can be added later.
           </p>
-          <div className="mt-4">
-            <SendDispatchForm
-              loadId={load.id}
-              outboundNumber={load.outboundNumber}
-              contacts={contactOptions}
-              mailConfigured={isMailConfigured()}
-            />
+          <div className="mt-4 space-y-3">
+            <a
+              href={`/api/loads/${load.id}/pdf`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block bg-sage px-4 py-2 text-sm font-medium text-white transition hover:bg-sage-dark"
+            >
+              Open PDF to attach in Outlook
+            </a>
+            <details className="text-sm text-ink/60">
+              <summary className="cursor-pointer text-ink/70 hover:text-sage-dark">
+                In-app email (coming later)
+              </summary>
+              <div className="mt-3">
+                <SendDispatchForm
+                  loadId={load.id}
+                  outboundNumber={load.outboundNumber}
+                  contacts={contactOptions}
+                  mailConfigured={isMailConfigured()}
+                />
+              </div>
+            </details>
           </div>
         </div>
       </div>
