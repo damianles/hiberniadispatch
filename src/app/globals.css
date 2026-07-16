@@ -42,3 +42,17 @@ body {
 .font-brand {
   font-family: var(--font-source-serif), Georgia, serif;
 }
+
+/* Forms: avoid horizontal overflow on narrow screens */
+input,
+select,
+textarea,
+button {
+  max-width: 100%;
+}
+
+@media (max-width: 639px) {
+  main {
+    padding-bottom: 1.5rem;
+  }
+}

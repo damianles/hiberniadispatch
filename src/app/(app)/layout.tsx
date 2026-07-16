@@ -13,65 +13,55 @@ export default async function AppLayout({
     redirect("/login");
   }
 
+  const navLink =
+    "inline-flex min-h-11 shrink-0 items-center px-2 text-ink/70 transition hover:text-sage-dark";
+
   return (
     <div className="flex min-h-full flex-1 flex-col">
-      <header className="border-b border-line bg-white/70 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-          <div className="flex items-center gap-6">
-            <Link href="/" className="flex items-center gap-3">
-              <Image
-                src="/hibernia-logo.png"
-                alt="Hibernia Trading"
-                width={280}
-                height={58}
-                className="h-10 w-auto"
-                quality={100}
-                sizes="140px"
-              />
-              <span className="font-brand hidden text-lg text-sage-dark sm:inline">
-                Dispatch
-              </span>
-            </Link>
-            <nav className="flex items-center gap-4 text-sm">
-              <Link href="/" className="text-ink/70 transition hover:text-sage-dark">
+      <header className="sticky top-0 z-40 border-b border-line bg-white/85 backdrop-blur-sm">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2 sm:py-3">
+          <Link href="/" className="flex shrink-0 items-center gap-2.5">
+            <Image
+              src="/hibernia-logo.png"
+              alt="Hibernia Trading"
+              width={280}
+              height={58}
+              className="h-9 w-auto sm:h-10"
+              quality={100}
+              sizes="140px"
+            />
+            <span className="font-brand hidden text-lg text-sage-dark sm:inline">
+              Dispatch
+            </span>
+          </Link>
+          <div className="flex min-w-0 flex-1 items-center justify-end gap-2 sm:gap-3">
+            <nav className="-mx-1 flex items-center gap-0.5 overflow-x-auto text-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <Link href="/" className={navLink}>
                 Loads
               </Link>
-              <Link
-                href="/loads/new"
-                className="text-ink/70 transition hover:text-sage-dark"
-              >
+              <Link href="/loads/new" className={navLink}>
                 New load
               </Link>
-              <Link href="/rates" className="text-ink/70 transition hover:text-sage-dark">
+              <Link href="/rates" className={navLink}>
                 Rates
               </Link>
-              <Link
-                href="/contacts"
-                className="text-ink/70 transition hover:text-sage-dark"
-              >
+              <Link href="/contacts" className={navLink}>
                 Contacts
               </Link>
               {session.user.role === "ADMIN" ? (
-                <Link
-                  href="/users"
-                  className="text-ink/70 transition hover:text-sage-dark"
-                >
+                <Link href="/users" className={navLink}>
                   Users
                 </Link>
               ) : null}
-              <Link
-                href="/account"
-                className="text-ink/70 transition hover:text-sage-dark"
-              >
+              <Link href="/account" className={navLink}>
                 Account
               </Link>
             </nav>
-          </div>
-          <div className="flex items-center gap-3 text-sm">
-            <span className="hidden text-ink/60 sm:inline">
+            <span className="hidden shrink-0 text-sm text-ink/60 lg:inline">
               {session.user.name} · {session.user.role}
             </span>
             <form
+              className="shrink-0"
               action={async () => {
                 "use server";
                 await signOut({ redirectTo: "/login" });
@@ -79,7 +69,7 @@ export default async function AppLayout({
             >
               <button
                 type="submit"
-                className="border border-line px-3 py-1.5 text-ink/80 transition hover:border-burgundy hover:text-burgundy"
+                className="inline-flex min-h-11 items-center border border-line px-3 text-sm text-ink/80 transition hover:border-burgundy hover:text-burgundy"
               >
                 Sign out
               </button>
@@ -87,7 +77,9 @@ export default async function AppLayout({
           </div>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:py-8">
+        {children}
+      </main>
     </div>
   );
 }
