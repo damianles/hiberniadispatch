@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth, signOut } from "@/auth";
+import { MobileNav } from "@/components/MobileNav";
 
 export default async function AppLayout({
   children,
@@ -13,13 +14,29 @@ export default async function AppLayout({
     redirect("/login");
   }
 
+  const navItems = [
+    { href: "/", label: "Loads" },
+    { href: "/loads/new", label: "New load" },
+    { href: "/rates", label: "Rates" },
+    { href: "/contacts", label: "Contacts" },
+    ...(session.user.role === "ADMIN"
+      ? [{ href: "/users", label: "Users" }]
+      : []),
+    { href: "/account", label: "Account" },
+  ];
+
+  async function signOutAction() {
+    "use server";
+    await signOut({ redirectTo: "/login" });
+  }
+
   const navLink =
-    "inline-flex min-h-10 items-center justify-center rounded-sm px-2.5 text-sm text-ink/70 transition hover:bg-paper-deep/60 hover:text-sage-dark sm:min-h-11";
+    "inline-flex min-h-11 items-center px-2.5 text-sm text-ink/70 transition hover:text-sage-dark";
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
       <header className="sticky top-0 z-40 border-b border-line bg-white/85 backdrop-blur-sm">
-        <div className="mx-auto max-w-6xl px-4 py-2 sm:py-3">
+        <div className="relative mx-auto max-w-6xl px-4 py-2 sm:py-3">
           <div className="flex items-center justify-between gap-3">
             <Link href="/" className="flex shrink-0 items-center gap-2.5">
               <Image
@@ -35,48 +52,32 @@ export default async function AppLayout({
                 Dispatch
               </span>
             </Link>
-            <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-              <span className="hidden text-sm text-ink/60 lg:inline">
+
+            <nav className="hidden items-center gap-1 md:flex">
+              {navItems.map((item) => (
+                <Link key={item.href} href={item.href} className={navLink}>
+                  {item.label}
+                </Link>
+              ))}
+              <span className="ml-2 hidden text-sm text-ink/60 lg:inline">
                 {session.user.name} · {session.user.role}
               </span>
-              <form
-                action={async () => {
-                  "use server";
-                  await signOut({ redirectTo: "/login" });
-                }}
-              >
+              <form action={signOutAction} className="ml-2">
                 <button
                   type="submit"
-                  className="inline-flex min-h-10 items-center border border-line px-3 text-sm text-ink/80 transition hover:border-burgundy hover:text-burgundy sm:min-h-11"
+                  className="inline-flex min-h-11 items-center border border-line px-3 text-sm text-ink/80 transition hover:border-burgundy hover:text-burgundy"
                 >
                   Sign out
                 </button>
               </form>
-            </div>
-          </div>
+            </nav>
 
-          <nav className="mt-2 flex flex-wrap gap-x-0.5 gap-y-1 border-t border-line/70 pt-2 sm:mt-3 sm:gap-1">
-            <Link href="/" className={navLink}>
-              Loads
-            </Link>
-            <Link href="/loads/new" className={navLink}>
-              New load
-            </Link>
-            <Link href="/rates" className={navLink}>
-              Rates
-            </Link>
-            <Link href="/contacts" className={navLink}>
-              Contacts
-            </Link>
-            {session.user.role === "ADMIN" ? (
-              <Link href="/users" className={navLink}>
-                Users
-              </Link>
-            ) : null}
-            <Link href="/account" className={navLink}>
-              Account
-            </Link>
-          </nav>
+            <MobileNav
+              items={navItems}
+              userLabel={`${session.user.name} · ${session.user.role}`}
+              signOutAction={signOutAction}
+            />
+          </div>
         </div>
       </header>
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:py-8">
