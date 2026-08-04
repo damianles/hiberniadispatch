@@ -171,7 +171,7 @@ export async function createLoadAction(
     };
   }
   const crossDockAmount = data.crossDock ? (data.crossDockFee ?? 0) : 0;
-  const { fuelAmount, totalAmount } = calcLoadTotal({
+  const { fuelAmount, carrierTotal, transloadTotal, totalAmount } = calcLoadTotal({
     baseRate,
     fuelSurchargePercent: data.fuelSurchargePercent,
     flatDeckFee: data.flatDeckFee,
@@ -248,6 +248,8 @@ export async function createLoadAction(
       blockingFee: data.blockingFee,
       carbonTax: data.carbonTax,
       crossDockAmount,
+      carrierTotal,
+      transloadTotal,
       totalAmount,
       createdById: user.id,
       updatedById: user.id,
@@ -411,7 +413,7 @@ export async function updateLoadAction(
     };
   }
   const crossDockAmount = data.crossDock ? (data.crossDockFee ?? 0) : 0;
-  const { fuelAmount, totalAmount } = calcLoadTotal({
+  const { fuelAmount, carrierTotal, transloadTotal, totalAmount } = calcLoadTotal({
     baseRate,
     fuelSurchargePercent: data.fuelSurchargePercent,
     flatDeckFee: data.flatDeckFee,
@@ -492,6 +494,8 @@ export async function updateLoadAction(
       blockingFee: data.blockingFee,
       carbonTax: data.carbonTax,
       crossDockAmount,
+      carrierTotal,
+      transloadTotal,
       totalAmount,
       updatedById: user.id,
       dispatchedAt:

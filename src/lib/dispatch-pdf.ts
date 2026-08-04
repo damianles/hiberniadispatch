@@ -181,11 +181,8 @@ export async function buildDispatchPdf(load: Load): Promise<Uint8Array> {
   if (load.restack && toNumber(load.restackFee) > 0) {
     transloadParts.push(`RESTACK ${money(toNumber(load.restackFee))}`);
   }
-  if (load.crossDock && toNumber(load.crossDockAmount) > 0) {
-    transloadParts.push(`CROSS DOCK ${money(toNumber(load.crossDockAmount))}`);
-  }
   if (transloadParts.length) {
-    details.push(`TRANSLOAD: ${transloadParts.join(" + ")}`);
+    details.push(`TRANSLOAD LOGISTICS: ${transloadParts.join(" + ")}`);
   }
   for (const line of details) {
     page.drawText(line, { x: margin, y, size: 10, font, color: ink });
@@ -193,66 +190,140 @@ export async function buildDispatchPdf(load: Load): Promise<Uint8Array> {
   }
   y -= 10;
 
-  y = drawSectionHeader(page, margin, y, "RATE BREAKDOWN", fontBold);
+  const amountX = width - margin;
   const fuelPct = toNumber(load.fuelSurchargePercent).toFixed(2);
-  const breakdown: [string, number][] = [
+  const carrierHeading =
+    load.carrier === "CDI" ? "CDI / IMS RATES" : "VFS / FORTIGO RATES";
+
+  y = drawSectionHeader(page, margin, y, carrierHeading, fontBold);
+  const carrierLines: [string, number][] = [
     [
-      `IMS Base Rate (${load.carrier})`,
+      `Base Rate (${load.carrier === "CDI" ? "IMS" : "Fortigo"})`,
       toNumber(load.baseRate),
     ],
     [`CP Fuel Surcharge (${fuelPct}%)`, toNumber(load.fuelAmount)],
   ];
   if (toNumber(load.flatDeckFee) > 0) {
-    breakdown.push([`Flat Deck (${load.carrier})`, toNumber(load.flatDeckFee)]);
-  }
-  if (load.reload && toNumber(load.reloadFee) > 0) {
-    breakdown.push(["Reload Fee", toNumber(load.reloadFee)]);
-  }
-  if (load.restack && toNumber(load.restackFee) > 0) {
-    breakdown.push(["Restack Fee", toNumber(load.restackFee)]);
+    carrierLines.push([
+      `Flat Deck (${load.carrier})`,
+      toNumber(load.flatDeckFee),
+    ]);
   }
   if (load.blocking && toNumber(load.blockingFee) > 0) {
-    breakdown.push(["Blocking / Bracing", toNumber(load.blockingFee)]);
+    carrierLines.push(["Blocking / Bracing", toNumber(load.blockingFee)]);
   }
   if (load.carbonTaxApplied && toNumber(load.carbonTax) > 0) {
-    breakdown.push(["Carbon Tax", toNumber(load.carbonTax)]);
+    carrierLines.push(["Carbon Tax", toNumber(load.carbonTax)]);
   }
   if (load.crossDock && toNumber(load.crossDockAmount) > 0) {
-    breakdown.push(["Cross Dock", toNumber(load.crossDockAmount)]);
+    carrierLines.push(["Cross Dock", toNumber(load.crossDockAmount)]);
   }
-
-  const amountX = width - margin;
-  for (const [label, amount] of breakdown) {
+  for (const [label, amount] of carrierLines) {
     page.drawText(label, { x: margin, y, size: 10, font, color: ink });
     const amt = money(amount);
     const aw = font.widthOfTextAtSize(amt, 10);
     page.drawText(amt, { x: amountX - aw, y, size: 10, font, color: ink });
     y -= 14;
   }
+  y -= 2;
+  page.drawLine({
+    start: { x: margin, y: y + 10 },
+    end: { x: width - margin, y: y + 10 },
+    thickness: 0.5,
+    color: muted,
+  });
+  const carrierLabel = load.carrier === "CDI" ? "CDI TOTAL" : "VFS TOTAL";
+  page.drawText(carrierLabel, {
+    x: margin,
+    y,
+    size: 11,
+    font: fontBold,
+    color: ink,
+  });
+  {
+    const t = money(toNumber(load.carrierTotal));
+    const tw = fontBold.widthOfTextAtSize(t, 11);
+    page.drawText(t, {
+      x: amountX - tw,
+      y,
+      size: 11,
+      font: fontBold,
+      color: ink,
+    });
+  }
+  y -= 22;
 
-  y -= 4;
+  y = drawSectionHeader(page, margin, y, "TRANSLOAD LOGISTICS", fontBold);
+  const transloadLines: [string, number][] = [];
+  if (load.reload && toNumber(load.reloadFee) > 0) {
+    transloadLines.push(["Reload Fee", toNumber(load.reloadFee)]);
+  }
+  if (load.restack && toNumber(load.restackFee) > 0) {
+    transloadLines.push(["Restack Fee", toNumber(load.restackFee)]);
+  }
+  if (transloadLines.length === 0) {
+    page.drawText("None", { x: margin, y, size: 10, font, color: muted });
+    y -= 14;
+  } else {
+    for (const [label, amount] of transloadLines) {
+      page.drawText(label, { x: margin, y, size: 10, font, color: ink });
+      const amt = money(amount);
+      const aw = font.widthOfTextAtSize(amt, 10);
+      page.drawText(amt, { x: amountX - aw, y, size: 10, font, color: ink });
+      y -= 14;
+    }
+  }
+  y -= 2;
+  page.drawLine({
+    start: { x: margin, y: y + 10 },
+    end: { x: width - margin, y: y + 10 },
+    thickness: 0.5,
+    color: muted,
+  });
+  page.drawText("TRANSLOAD TOTAL", {
+    x: margin,
+    y,
+    size: 11,
+    font: fontBold,
+    color: ink,
+  });
+  {
+    const t = money(toNumber(load.transloadTotal));
+    const tw = fontBold.widthOfTextAtSize(t, 11);
+    page.drawText(t, {
+      x: amountX - tw,
+      y,
+      size: 11,
+      font: fontBold,
+      color: ink,
+    });
+  }
+  y -= 20;
+
   page.drawLine({
     start: { x: margin, y: y + 10 },
     end: { x: width - margin, y: y + 10 },
     thickness: 0.75,
     color: muted,
   });
-  page.drawText("VFS TOTAL", {
+  page.drawText("COMBINED TOTAL", {
     x: margin,
     y,
     size: 12,
     font: fontBold,
     color: burgundy,
   });
-  const total = money(toNumber(load.totalAmount));
-  const tw = fontBold.widthOfTextAtSize(total, 12);
-  page.drawText(total, {
-    x: amountX - tw,
-    y,
-    size: 12,
-    font: fontBold,
-    color: burgundy,
-  });
+  {
+    const total = money(toNumber(load.totalAmount));
+    const tw = fontBold.widthOfTextAtSize(total, 12);
+    page.drawText(total, {
+      x: amountX - tw,
+      y,
+      size: 12,
+      font: fontBold,
+      color: burgundy,
+    });
+  }
   y -= 28;
 
   y = drawSectionHeader(page, margin, y, "LOAD CONTENTS", fontBold);

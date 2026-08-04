@@ -41,7 +41,8 @@ export default async function LoadDetailPage({
   if (!load) notFound();
 
   const n = toNumber;
-  const rows = [
+  const carrierLabel = load.carrier === "CDI" ? "CDI / IMS" : "VFS / Fortigo";
+  const carrierRows = [
     {
       label: `Base (${load.carrier === "CDI" ? "IMS" : "Fortigo"})`,
       value: money(n(load.baseRate)),
@@ -52,14 +53,6 @@ export default async function LoadDetailPage({
     },
     { label: "Flat deck", value: money(n(load.flatDeckFee)) },
     {
-      label: "Reload",
-      value: load.reload ? money(n(load.reloadFee)) : "No",
-    },
-    {
-      label: "Restack",
-      value: load.restack ? money(n(load.restackFee)) : "No",
-    },
-    {
       label: "Blocking / bracing",
       value: load.blocking ? money(n(load.blockingFee)) : "No",
     },
@@ -69,11 +62,21 @@ export default async function LoadDetailPage({
     },
   ];
   if (load.crossDock) {
-    rows.push({
+    carrierRows.push({
       label: "Cross dock",
       value: money(n(load.crossDockAmount)),
     });
   }
+  const transloadRows = [
+    {
+      label: "Reload",
+      value: load.reload ? money(n(load.reloadFee)) : "No",
+    },
+    {
+      label: "Restack",
+      value: load.restack ? money(n(load.restackFee)) : "No",
+    },
+  ];
 
   const contactOptions = contacts.map((c) => ({
     id: c.id,
@@ -286,7 +289,10 @@ export default async function LoadDetailPage({
       <div className="mt-6 border border-line bg-white/80 p-5">
         <h2 className="font-brand text-xl text-burgundy">Rate breakdown</h2>
         <dl className="mt-4 space-y-2 text-sm">
-          {rows.map((r) => (
+          <p className="text-xs font-medium uppercase tracking-wide text-ink/45">
+            {carrierLabel}
+          </p>
+          {carrierRows.map((r) => (
             <div
               key={r.label}
               className="flex justify-between border-b border-line/50 py-1.5"
@@ -295,8 +301,30 @@ export default async function LoadDetailPage({
               <dd>{r.value}</dd>
             </div>
           ))}
+          <div className="flex justify-between border-t border-line pt-2 font-medium">
+            <dt>{load.carrier === "CDI" ? "CDI total" : "VFS total"}</dt>
+            <dd>{money(n(load.carrierTotal))}</dd>
+          </div>
+
+          <p className="pt-3 text-xs font-medium uppercase tracking-wide text-ink/45">
+            Transload Logistics
+          </p>
+          {transloadRows.map((r) => (
+            <div
+              key={r.label}
+              className="flex justify-between border-b border-line/50 py-1.5"
+            >
+              <dt className="text-ink/70">{r.label}</dt>
+              <dd>{r.value}</dd>
+            </div>
+          ))}
+          <div className="flex justify-between border-t border-line pt-2 font-medium">
+            <dt>Transload total</dt>
+            <dd>{money(n(load.transloadTotal))}</dd>
+          </div>
+
           <div className="flex justify-between border-t border-line pt-3 text-base font-medium">
-            <dt>VFS total</dt>
+            <dt>Combined total</dt>
             <dd className="font-brand text-xl text-sage-dark">
               {money(n(load.totalAmount))}
             </dd>

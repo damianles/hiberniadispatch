@@ -9,7 +9,7 @@ import {
   updateLoadAction,
   type CreateLoadState,
 } from "../actions";
-import { calcLoadTotal } from "@/lib/rates";
+import { calcLoadTotal, carrierTotalLabel } from "@/lib/rates";
 import { money } from "@/lib/money";
 import { DEFAULT_PICKUP } from "@/lib/load-defaults";
 import type {
@@ -753,7 +753,9 @@ export function LoadForm({
               ))}
             </div>
             <p className="mt-1 text-xs text-ink/50">
-              {reload ? `Adds ${money(fees.reloadFee)}` : "Not included"}
+              {reload
+                ? `Transload fee ${money(fees.reloadFee)}`
+                : "Not included (Transload)"}
             </p>
           </div>
 
@@ -778,7 +780,9 @@ export function LoadForm({
                   ))}
                 </div>
                 <p className="mt-1 text-xs text-ink/50">
-                  {restack ? `Adds ${money(fees.restackFee)}` : "Not included"}
+                  {restack
+                    ? `Transload fee ${money(fees.restackFee)}`
+                    : "Not included (Transload)"}
                 </p>
               </>
             ) : (
@@ -912,6 +916,9 @@ export function LoadForm({
       <section className="border border-line bg-white/80 p-5">
         <h2 className="font-brand text-xl text-burgundy">Rate breakdown</h2>
         <dl className="mt-4 space-y-2 text-sm">
+          <p className="text-xs font-medium uppercase tracking-wide text-ink/45">
+            {carrier === "CDI" ? "CDI / IMS" : "VFS / Fortigo"}
+          </p>
           <Row
             label={`Base (${carrier === "CDI" ? "IMS" : "Fortigo"}${matchedRate ? "" : ", manual"})`}
             value={money(baseRate)}
@@ -921,15 +928,28 @@ export function LoadForm({
             value={money(totals.fuelAmount)}
           />
           <Row label="Flat deck" value={money(flatDeckFee)} />
-          <Row label="Reload" value={money(reloadFee)} />
-          <Row label="Restack" value={money(restackFee)} />
           <Row label="Blocking / bracing" value={money(blockingAmount)} />
           <Row label="Carbon tax" value={money(carbonAmount)} />
           {crossDock ? (
             <Row label="Cross dock" value={money(crossDockAmount)} />
           ) : null}
+          <div className="flex justify-between border-t border-line pt-2 font-medium">
+            <dt>{carrierTotalLabel(carrier)}</dt>
+            <dd>{money(totals.carrierTotal)}</dd>
+          </div>
+
+          <p className="pt-3 text-xs font-medium uppercase tracking-wide text-ink/45">
+            Transload Logistics
+          </p>
+          <Row label="Reload" value={money(reloadFee)} />
+          <Row label="Restack" value={money(restackFee)} />
+          <div className="flex justify-between border-t border-line pt-2 font-medium">
+            <dt>Transload total</dt>
+            <dd>{money(totals.transloadTotal)}</dd>
+          </div>
+
           <div className="flex justify-between border-t border-line pt-3 text-base font-medium">
-            <dt>VFS total</dt>
+            <dt>Combined total</dt>
             <dd className="font-brand text-xl text-sage-dark">
               {money(totals.totalAmount)}
             </dd>

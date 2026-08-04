@@ -166,6 +166,8 @@ model Load {
   blockingFee           Decimal
   carbonTax             Decimal
   crossDockAmount       Decimal
+  carrierTotal          Decimal
+  transloadTotal        Decimal
   totalAmount           Decimal
 
   createdById  String

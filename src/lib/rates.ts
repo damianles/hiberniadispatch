@@ -1,16 +1,19 @@
 /**
- * Load total = base + fuel$ + selected fee lines.
- * Fuel % applies to base rate only (never to fees).
+ * Costing:
+ * - Carrier (VFS / CDI): base + fuel$ + flat deck + blocking + carbon + cross dock
+ * - Transload Logistics: reload + restack (only when selected)
+ * - Combined total = carrier + transload
+ * Fuel % applies to base rate only.
  */
 export type LoadRateInput = {
   baseRate: number;
-  fuelSurchargePercent: number; // 0.00–100.00, per load
-  flatDeckFee: number; // CDI $375 / Fortigo $450 when flat deck; else 0
-  reloadFee: number; // $500 when reload Yes; else 0
-  restackFee: number; // $100 when restack Yes on 2x4/6/8; else 0
-  blockingFee: number; // manual when blocking Yes; else 0
-  carbonTax: number; // manual when carbon Yes; else 0
-  crossDockAmount: number; // manual when cross dock Yes; else 0
+  fuelSurchargePercent: number;
+  flatDeckFee: number;
+  reloadFee: number;
+  restackFee: number;
+  blockingFee: number;
+  carbonTax: number;
+  crossDockAmount: number;
 };
 
 export function normalizeFuelPercent(value: number): number {
@@ -25,17 +28,22 @@ export function calcFuelAmount(baseRate: number, fuelSurchargePercent: number) {
 
 export function calcLoadTotal(input: LoadRateInput) {
   const fuelAmount = calcFuelAmount(input.baseRate, input.fuelSurchargePercent);
-  const totalAmount = roundMoney(
+  const carrierTotal = roundMoney(
     input.baseRate +
       fuelAmount +
       input.flatDeckFee +
-      input.reloadFee +
-      input.restackFee +
       input.blockingFee +
       input.carbonTax +
       input.crossDockAmount,
   );
-  return { fuelAmount, totalAmount };
+  const transloadTotal = roundMoney(input.reloadFee + input.restackFee);
+  const totalAmount = roundMoney(carrierTotal + transloadTotal);
+  return { fuelAmount, carrierTotal, transloadTotal, totalAmount };
+}
+
+/** Display label for the carrier bucket (Fortigo = VFS, CDI = CDI). */
+export function carrierTotalLabel(carrier: "CDI" | "FORTIGO" | string) {
+  return carrier === "CDI" ? "CDI total" : "VFS total";
 }
 
 function roundMoney(n: number) {
