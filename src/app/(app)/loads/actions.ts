@@ -144,8 +144,8 @@ export async function createLoadAction(
 
   // Restack only applies to 2x4 / 6 / 8
   const restackAllowed = data.productClass === "SIZE_2X4_6_8";
-  const restack = restackAllowed && data.restack;
-  const restackFee = restack ? data.restackFee : 0;
+  const restackApplied = restackAllowed && data.restack;
+  const restackFee = restackApplied ? data.restackFee : 0;
 
   if (data.blocking && data.blockingFee <= 0) {
     return { error: "Enter a blocking / bracing amount, or set Blocking to No." };
@@ -233,7 +233,7 @@ export async function createLoadAction(
       equipmentStyle: data.equipmentStyle,
       crossDock: data.crossDock,
       crossDockFee: crossDockAmount,
-      restack,
+      restack: restackApplied,
       reload: data.reload,
       blocking: data.blocking,
       carbonTaxApplied: data.carbonTaxApplied,

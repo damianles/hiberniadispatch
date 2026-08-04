@@ -299,9 +299,8 @@ export function LoadForm({ rates, addresses, fees }: Props) {
               ))}
             </div>
             <p className="mt-1 text-xs text-ink/50">
-              {carrier === "CDI"
-                ? "Sets the CDI rate class and restack eligibility."
-                : "Fortigo rate is one base; size still controls restack ($100 on 2x4/6/8 only)."}
+              Same size choice for CDI and Fortigo. Restack ($100) only applies to
+              2x4 / 6 / 8.
             </p>
           </div>
           <div className="sm:col-span-2 lg:col-span-3">
