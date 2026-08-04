@@ -95,10 +95,7 @@ function tabName() {
 function loadServiceAccount(): { client_email: string; private_key: string } {
   const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON?.trim();
   if (raw) {
-    const parsed = JSON.parse(raw) as {
-      client_email: string;
-      private_key: string;
-    };
+    const parsed = parseServiceAccountJson(raw);
     return {
       client_email: parsed.client_email,
       private_key: parsed.private_key.replace(/\\n/g, "\n"),
@@ -115,6 +112,55 @@ function loadServiceAccount(): { client_email: string; private_key: string } {
   }
 
   throw new Error("Google service account credentials not configured");
+}
+
+/** Accepts raw JSON, minified JSON, or base64(JSON) — Vercel paste often breaks multi-line JSON. */
+function parseServiceAccountJson(raw: string): {
+  client_email: string;
+  private_key: string;
+} {
+  const cleaned = raw.replace(/^\uFEFF/, "").trim();
+  const candidates = [cleaned];
+
+  // If wrapped in quotes from the env UI, unwrap once
+  if (
+    (cleaned.startsWith("'") && cleaned.endsWith("'")) ||
+    (cleaned.startsWith('"') && cleaned.endsWith('"'))
+  ) {
+    candidates.push(cleaned.slice(1, -1));
+  }
+
+  // Base64 of the whole JSON file (safest for Vercel)
+  try {
+    const decoded = Buffer.from(cleaned, "base64").toString("utf8").trim();
+    if (decoded.startsWith("{")) candidates.push(decoded);
+  } catch {
+    // ignore
+  }
+
+  let lastError: unknown;
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(candidate) as {
+        client_email?: string;
+        private_key?: string;
+      };
+      if (!parsed.client_email || !parsed.private_key) {
+        throw new Error("JSON missing client_email or private_key");
+      }
+      return {
+        client_email: parsed.client_email,
+        private_key: parsed.private_key,
+      };
+    } catch (e) {
+      lastError = e;
+    }
+  }
+
+  const msg = lastError instanceof Error ? lastError.message : String(lastError);
+  throw new Error(
+    `Invalid GOOGLE_SERVICE_ACCOUNT_JSON (${msg}). Re-paste as one line, or set the value to base64 of the key file (PowerShell: [Convert]::ToBase64String([IO.File]::ReadAllBytes('key.json'))). Do not create a new key unless the file is lost.`,
+  );
 }
 
 async function getSheetsClient(): Promise<sheets_v4.Sheets> {
