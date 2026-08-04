@@ -56,15 +56,19 @@ export async function createLoadAction(
   const carrier = String(formData.get("carrier") ?? "");
   const productClassRaw = String(formData.get("productClass") ?? "");
   const productClass =
-    carrier === "FORTIGO" ? "ALL" : productClassRaw || "SIZE_2X4_6_8";
+    productClassRaw === "SIZE_2X10_12" ? "SIZE_2X10_12" : "SIZE_2X4_6_8";
 
   const restack = formBool(formData.get("restack"));
+  const reload = formBool(formData.get("reload"));
+  const blocking = formBool(formData.get("blocking"));
+  const carbonTaxApplied = formBool(formData.get("carbonTaxApplied"));
   const crossDock = formBool(formData.get("crossDock"));
   const equipment = String(formData.get("equipment") ?? "FLAT_DECK");
   const equipmentStyle = String(formData.get("equipmentStyle") ?? "SUPER_B");
 
   const restackFeeMaster = formNum(formData.get("restackFeeMaster"));
   const flatDeckMaster = formNum(formData.get("flatDeckFee"));
+  const reloadFeeMaster = formNum(formData.get("reloadFeeMaster"));
 
   const parsed = createLoadSchema.safeParse({
     outboundNumber: formData.get("outboundNumber"),
@@ -96,6 +100,9 @@ export async function createLoadAction(
     crossDock,
     crossDockFee: crossDock ? formNum(formData.get("crossDockFee")) : 0,
     restack,
+    reload,
+    blocking,
+    carbonTaxApplied,
 
     loadContents: formData.get("loadContents"),
     weightLbs: formData.get("weightLbs")
@@ -107,10 +114,10 @@ export async function createLoadAction(
     ),
     baseRate: formNum(formData.get("baseRate")),
     flatDeckFee: equipment === "FLAT_DECK" ? flatDeckMaster : 0,
-    reloadFee: formNum(formData.get("reloadFee")),
+    reloadFee: reload ? reloadFeeMaster : 0,
     restackFee: restack ? restackFeeMaster : 0,
-    blockingFee: formNum(formData.get("blockingFee")),
-    carbonTax: formNum(formData.get("carbonTax")),
+    blockingFee: blocking ? formNum(formData.get("blockingFee")) : 0,
+    carbonTax: carbonTaxApplied ? formNum(formData.get("carbonTax")) : 0,
 
     saveAddress: formBool(formData.get("saveAddress")),
     addressNickname: String(formData.get("addressNickname") ?? "") || undefined,
@@ -135,6 +142,18 @@ export async function createLoadAction(
   const rateProductClass: ProductClass =
     data.carrier === "FORTIGO" ? "ALL" : (data.productClass as ProductClass);
 
+  // Restack only applies to 2x4 / 6 / 8
+  const restackAllowed = data.productClass === "SIZE_2X4_6_8";
+  const restack = restackAllowed && data.restack;
+  const restackFee = restack ? data.restackFee : 0;
+
+  if (data.blocking && data.blockingFee <= 0) {
+    return { error: "Enter a blocking / bracing amount, or set Blocking to No." };
+  }
+  if (data.carbonTaxApplied && data.carbonTax <= 0) {
+    return { error: "Enter a carbon tax amount, or set Carbon tax to No." };
+  }
+
   const carrierRates = await prisma.freightRate.findMany({
     where: { carrier: data.carrier, productClass: rateProductClass },
   });
@@ -157,7 +176,7 @@ export async function createLoadAction(
     fuelSurchargePercent: data.fuelSurchargePercent,
     flatDeckFee: data.flatDeckFee,
     reloadFee: data.reloadFee,
-    restackFee: data.restackFee,
+    restackFee,
     blockingFee: data.blockingFee,
     carbonTax: data.carbonTax,
     crossDockAmount,
@@ -209,12 +228,15 @@ export async function createLoadAction(
       deliveryRef: data.deliveryRef,
       deliveryAddressId,
       carrier: data.carrier,
-      productClass: rateProductClass,
+      productClass: data.productClass as ProductClass,
       equipment: data.equipment,
       equipmentStyle: data.equipmentStyle,
       crossDock: data.crossDock,
       crossDockFee: crossDockAmount,
-      restack: data.restack,
+      restack,
+      reload: data.reload,
+      blocking: data.blocking,
+      carbonTaxApplied: data.carbonTaxApplied,
       loadContents: data.loadContents,
       weightLbs: data.weightLbs,
       baseRate,
@@ -222,7 +244,7 @@ export async function createLoadAction(
       fuelAmount,
       flatDeckFee: data.flatDeckFee,
       reloadFee: data.reloadFee,
-      restackFee: data.restackFee,
+      restackFee,
       blockingFee: data.blockingFee,
       carbonTax: data.carbonTax,
       crossDockAmount,

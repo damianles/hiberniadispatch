@@ -150,6 +150,9 @@ model Load {
   crossDock    Boolean  @default(false)
   crossDockFee Decimal?
   restack      Boolean  @default(false)
+  reload       Boolean  @default(false)
+  blocking     Boolean  @default(false)
+  carbonTaxApplied Boolean @default(false)
 
   loadContents String
   weightLbs    Int?

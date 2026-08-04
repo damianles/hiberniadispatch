@@ -21,6 +21,4 @@ export type FeeDefaults = {
   flatDeckFortigo: number;
   reloadFee: number;
   restackFee: number;
-  blockingFee: number;
-  carbonTax: number;
 };

@@ -43,24 +43,15 @@ async function main() {
   if (!sheet) throw new Error("Sheet1 not found");
 
   // B2 fuel % on the sheet is weekly/current only — not imported.
-  // Fuel is selected per load on the form (1–100%).
-  const flatDeckCdi = num(cell(sheet, 5, 2));
-  const flatDeckFortigo = num(cell(sheet, 5, 9));
-  const reloadFee = num(cell(sheet, 6, 2));
-  const restackFee = num(cell(sheet, 7, 2));
-  const blockingFee = num(cell(sheet, 8, 2));
-  const carbonTax = num(cell(sheet, 9, 2));
-
-  if (
-    flatDeckCdi == null ||
-    flatDeckFortigo == null ||
-    reloadFee == null ||
-    restackFee == null ||
-    blockingFee == null ||
-    carbonTax == null
-  ) {
-    throw new Error("Missing fee defaults in spreadsheet header (B5, I5, B6–B9)");
-  }
+  // Fuel is selected per load on the form.
+  // Confirmed master fees (sheet may drift; these are the locked amounts).
+  const flatDeckCdi = num(cell(sheet, 5, 2)) ?? 375;
+  const flatDeckFortigo = num(cell(sheet, 5, 9)) ?? 450;
+  const reloadFee = num(cell(sheet, 6, 2)) ?? 500;
+  const restackFee = num(cell(sheet, 7, 2)) ?? 100;
+  // Blocking & carbon are manual per load — store 0 in fee master.
+  const blockingFee = 0;
+  const carbonTax = 0;
 
   const passwordHash = await bcrypt.hash("ChangeMe123!", 12);
   const admin = await prisma.user.upsert({

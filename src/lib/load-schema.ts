@@ -36,6 +36,9 @@ export const createLoadSchema = z.object({
   crossDock: z.boolean(),
   crossDockFee: z.number().min(0).optional(),
   restack: z.boolean(),
+  reload: z.boolean(),
+  blocking: z.boolean(),
+  carbonTaxApplied: z.boolean(),
 
   loadContents: z.string().trim().min(1, "Load contents are required"),
   weightLbs: z.number().int().positive().optional(),

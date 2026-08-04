@@ -42,12 +42,10 @@ export default async function NewLoadPage() {
   }));
 
   const fees = {
-    flatDeckCdi: toNumber(feeSettings.flatDeckCdi),
-    flatDeckFortigo: toNumber(feeSettings.flatDeckFortigo),
-    reloadFee: toNumber(feeSettings.reloadFee),
-    restackFee: toNumber(feeSettings.restackFee),
-    blockingFee: toNumber(feeSettings.blockingFee),
-    carbonTax: toNumber(feeSettings.carbonTax),
+    flatDeckCdi: toNumber(feeSettings.flatDeckCdi) || 375,
+    flatDeckFortigo: toNumber(feeSettings.flatDeckFortigo) || 450,
+    reloadFee: toNumber(feeSettings.reloadFee) || 500,
+    restackFee: toNumber(feeSettings.restackFee) || 100,
   };
 
   return (

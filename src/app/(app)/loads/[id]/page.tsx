@@ -51,10 +51,22 @@ export default async function LoadDetailPage({
       value: money(n(load.fuelAmount)),
     },
     { label: "Flat deck", value: money(n(load.flatDeckFee)) },
-    { label: "Reload", value: money(n(load.reloadFee)) },
-    { label: "Restack", value: money(n(load.restackFee)) },
-    { label: "Blocking / bracing", value: money(n(load.blockingFee)) },
-    { label: "Carbon tax", value: money(n(load.carbonTax)) },
+    {
+      label: "Reload",
+      value: load.reload ? money(n(load.reloadFee)) : "No",
+    },
+    {
+      label: "Restack",
+      value: load.restack ? money(n(load.restackFee)) : "No",
+    },
+    {
+      label: "Blocking / bracing",
+      value: load.blocking ? money(n(load.blockingFee)) : "No",
+    },
+    {
+      label: "Carbon tax",
+      value: load.carbonTaxApplied ? money(n(load.carbonTax)) : "No",
+    },
   ];
   if (load.crossDock) {
     rows.push({

@@ -34,7 +34,8 @@ export default async function RatesPage() {
         <div className="border border-line bg-white/80 p-6">
           <h2 className="font-brand text-xl text-burgundy">Fee defaults</h2>
           <p className="mt-1 text-xs text-ink/50">
-            Prefill values on new loads. Editable when master fees change.
+            Flat deck, reload, and restack amounts from the rate sheet. Blocking and
+            carbon tax are entered manually on each load when enabled.
           </p>
           {feeSettings ? (
             <dl className="mt-4 space-y-2 text-sm">
@@ -47,20 +48,20 @@ export default async function RatesPage() {
                 <dd className="font-medium">{money(feeSettings.flatDeckFortigo)}</dd>
               </div>
               <div className="flex justify-between border-b border-line/60 py-2">
-                <dt>Reload</dt>
+                <dt>Reload (when Yes)</dt>
                 <dd className="font-medium">{money(feeSettings.reloadFee)}</dd>
               </div>
               <div className="flex justify-between border-b border-line/60 py-2">
-                <dt>Restack</dt>
+                <dt>Restack (2x4/6/8 when Yes)</dt>
                 <dd className="font-medium">{money(feeSettings.restackFee)}</dd>
               </div>
               <div className="flex justify-between border-b border-line/60 py-2">
                 <dt>Blocking / bracing</dt>
-                <dd className="font-medium">{money(feeSettings.blockingFee)}</dd>
+                <dd className="font-medium text-ink/55">Manual per load</dd>
               </div>
               <div className="flex justify-between py-2">
                 <dt>Carbon tax</dt>
-                <dd className="font-medium">{money(feeSettings.carbonTax)}</dd>
+                <dd className="font-medium text-ink/55">Manual per load</dd>
               </div>
             </dl>
           ) : (

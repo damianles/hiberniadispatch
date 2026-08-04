@@ -44,6 +44,11 @@ export function LoadForm({ rates, addresses, fees }: Props) {
   const [equipmentStyle, setEquipmentStyle] =
     useState<EquipmentStyle>("SUPER_B");
   const [restack, setRestack] = useState(true);
+  const [reload, setReload] = useState(false);
+  const [blocking, setBlocking] = useState(false);
+  const [blockingFee, setBlockingFee] = useState(0);
+  const [carbonTaxApplied, setCarbonTaxApplied] = useState(false);
+  const [carbonTax, setCarbonTax] = useState(0);
   const [crossDock, setCrossDock] = useState(false);
   const [crossDockFee, setCrossDockFee] = useState(0);
   const [fuelPercent, setFuelPercent] = useState(0);
@@ -84,13 +89,17 @@ export function LoadForm({ rates, addresses, fees }: Props) {
     );
   }, [rates, destination, carrier, productClass]);
 
+  const restackAllowed = productClass === "SIZE_2X4_6_8";
   const flatDeckFee =
     equipment === "FLAT_DECK"
       ? carrier === "CDI"
         ? fees.flatDeckCdi
         : fees.flatDeckFortigo
       : 0;
-  const restackFee = restack ? fees.restackFee : 0;
+  const reloadFee = reload ? fees.reloadFee : 0;
+  const restackFee = restackAllowed && restack ? fees.restackFee : 0;
+  const blockingAmount = blocking ? blockingFee : 0;
+  const carbonAmount = carbonTaxApplied ? carbonTax : 0;
   const crossDockAmount = crossDock ? crossDockFee : 0;
 
   const baseRate = matchedRate
@@ -104,20 +113,20 @@ export function LoadForm({ rates, addresses, fees }: Props) {
         baseRate,
         fuelSurchargePercent: fuelPercent,
         flatDeckFee,
-        reloadFee: fees.reloadFee,
+        reloadFee,
         restackFee,
-        blockingFee: fees.blockingFee,
-        carbonTax: fees.carbonTax,
+        blockingFee: blockingAmount,
+        carbonTax: carbonAmount,
         crossDockAmount,
       }),
     [
       baseRate,
       fuelPercent,
       flatDeckFee,
-      fees.reloadFee,
+      reloadFee,
       restackFee,
-      fees.blockingFee,
-      fees.carbonTax,
+      blockingAmount,
+      carbonAmount,
       crossDockAmount,
     ],
   );
@@ -126,9 +135,7 @@ export function LoadForm({ rates, addresses, fees }: Props) {
     setCarrier(next);
     setDestination("");
     setManualBaseRate("");
-    if (next === "CDI") {
-      setRestack(productClass === "SIZE_2X4_6_8");
-    }
+    setRestack(productClass === "SIZE_2X4_6_8");
   }
 
   function onProductChange(next: "SIZE_2X4_6_8" | "SIZE_2X10_12") {
@@ -169,23 +176,31 @@ export function LoadForm({ rates, addresses, fees }: Props) {
     <form action={formAction} className="space-y-8">
       <input type="hidden" name="baseRate" value={baseRate || ""} />
       <input type="hidden" name="flatDeckFee" value={flatDeckFee} />
-      <input type="hidden" name="reloadFee" value={fees.reloadFee} />
+      <input type="hidden" name="reloadFeeMaster" value={fees.reloadFee} />
       <input type="hidden" name="restackFeeMaster" value={fees.restackFee} />
-      <input type="hidden" name="blockingFee" value={fees.blockingFee} />
-      <input type="hidden" name="carbonTax" value={fees.carbonTax} />
       <input type="hidden" name="fuelSurchargePercent" value={fuelPercent} />
       <input type="hidden" name="carrier" value={carrier} />
-      <input
-        type="hidden"
-        name="productClass"
-        value={carrier === "FORTIGO" ? "ALL" : productClass}
-      />
+      <input type="hidden" name="productClass" value={productClass} />
       <input type="hidden" name="equipment" value={equipment} />
       <input type="hidden" name="equipmentStyle" value={equipmentStyle} />
-      <input type="hidden" name="restack" value={restack ? "true" : "false"} />
+      <input
+        type="hidden"
+        name="restack"
+        value={restackAllowed && restack ? "true" : "false"}
+      />
+      <input type="hidden" name="reload" value={reload ? "true" : "false"} />
+      <input type="hidden" name="blocking" value={blocking ? "true" : "false"} />
+      <input
+        type="hidden"
+        name="carbonTaxApplied"
+        value={carbonTaxApplied ? "true" : "false"}
+      />
       <input type="hidden" name="crossDock" value={crossDock ? "true" : "false"} />
-      <input type="hidden" name="deliveryAddressId" value={delivery.deliveryAddressId} />
-
+      <input
+        type="hidden"
+        name="deliveryAddressId"
+        value={delivery.deliveryAddressId}
+      />
       {state?.error ? (
         <div className="border border-burgundy/40 bg-burgundy/5 px-4 py-3 text-sm text-burgundy">
           {state.error}
@@ -260,40 +275,35 @@ export function LoadForm({ rates, addresses, fees }: Props) {
             </div>
           </div>
 
-          {carrier === "CDI" ? (
-            <div>
-              <span className={label}>Product class (rate)</span>
-              <div className="mt-2 flex gap-2">
-                {(
-                  [
-                    ["SIZE_2X4_6_8", "2x4 / 6 / 8"],
-                    ["SIZE_2X10_12", "2x10 / 12"],
-                  ] as const
-                ).map(([value, text]) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => onProductChange(value)}
-                    className={`flex-1 border px-3 py-2 text-sm ${
-                      productClass === value
-                        ? "border-sage bg-sage text-white"
-                        : "border-line bg-white text-ink/80"
-                    }`}
-                  >
-                    {text}
-                  </button>
-                ))}
-              </div>
+          <div>
+            <span className={label}>Product size</span>
+            <div className="mt-2 flex gap-2">
+              {(
+                [
+                  ["SIZE_2X4_6_8", "2x4 / 6 / 8"],
+                  ["SIZE_2X10_12", "2x10 / 12"],
+                ] as const
+              ).map(([value, text]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => onProductChange(value)}
+                  className={`flex-1 border px-3 py-2 text-sm ${
+                    productClass === value
+                      ? "border-sage bg-sage text-white"
+                      : "border-line bg-white text-ink/80"
+                  }`}
+                >
+                  {text}
+                </button>
+              ))}
             </div>
-          ) : (
-            <div>
-              <span className={label}>Product class</span>
-              <p className="mt-2 border border-line bg-paper-deep/40 px-3 py-2 text-sm text-ink/60">
-                Fortigo uses a single base rate (no size split)
-              </p>
-            </div>
-          )}
-
+            <p className="mt-1 text-xs text-ink/50">
+              {carrier === "CDI"
+                ? "Sets the CDI rate class and restack eligibility."
+                : "Fortigo rate is one base; size still controls restack ($100 on 2x4/6/8 only)."}
+            </p>
+          </div>
           <div className="sm:col-span-2 lg:col-span-3">
             <span className={label}>Equipment</span>
             <div className="mt-2 flex gap-2">
@@ -640,15 +650,15 @@ export function LoadForm({ rates, addresses, fees }: Props) {
           </div>
 
           <div>
-            <span className={label}>Restack</span>
+            <span className={label}>Reload</span>
             <div className="mt-2 flex gap-2">
               {[true, false].map((v) => (
                 <button
                   key={String(v)}
                   type="button"
-                  onClick={() => setRestack(v)}
+                  onClick={() => setReload(v)}
                   className={`flex-1 border px-3 py-2 text-sm ${
-                    restack === v
+                    reload === v
                       ? "border-sage bg-sage text-white"
                       : "border-line bg-white text-ink/80"
                   }`}
@@ -658,9 +668,119 @@ export function LoadForm({ rates, addresses, fees }: Props) {
               ))}
             </div>
             <p className="mt-1 text-xs text-ink/50">
-              Defaults on for 2x4/6/8, off for 2x10/12 — still overridable.
-              {restack ? ` (+${money(fees.restackFee)})` : null}
+              {reload ? `Adds ${money(fees.reloadFee)}` : "Not included"}
             </p>
+          </div>
+
+          <div>
+            <span className={label}>Restack</span>
+            {restackAllowed ? (
+              <>
+                <div className="mt-2 flex gap-2">
+                  {[true, false].map((v) => (
+                    <button
+                      key={String(v)}
+                      type="button"
+                      onClick={() => setRestack(v)}
+                      className={`flex-1 border px-3 py-2 text-sm ${
+                        restack === v
+                          ? "border-sage bg-sage text-white"
+                          : "border-line bg-white text-ink/80"
+                      }`}
+                    >
+                      {v ? "Yes" : "No"}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-1 text-xs text-ink/50">
+                  {restack ? `Adds ${money(fees.restackFee)}` : "Not included"}
+                </p>
+              </>
+            ) : (
+              <p className="mt-2 border border-line bg-paper-deep/40 px-3 py-2 text-sm text-ink/60">
+                Not available for 2x10 / 12
+              </p>
+            )}
+          </div>
+
+          <div>
+            <span className={label}>Blocking / bracing</span>
+            <div className="mt-2 flex gap-2">
+              {[true, false].map((v) => (
+                <button
+                  key={String(v)}
+                  type="button"
+                  onClick={() => setBlocking(v)}
+                  className={`flex-1 border px-3 py-2 text-sm ${
+                    blocking === v
+                      ? "border-sage bg-sage text-white"
+                      : "border-line bg-white text-ink/80"
+                  }`}
+                >
+                  {v ? "Yes" : "No"}
+                </button>
+              ))}
+            </div>
+            {blocking ? (
+              <div className="mt-2">
+                <label className={label} htmlFor="blockingFee">
+                  Amount ($)
+                </label>
+                <input
+                  id="blockingFee"
+                  name="blockingFee"
+                  type="number"
+                  min={0.01}
+                  step={0.01}
+                  value={blockingFee || ""}
+                  onChange={(e) => setBlockingFee(Number(e.target.value) || 0)}
+                  className={field}
+                  required
+                />
+              </div>
+            ) : (
+              <input type="hidden" name="blockingFee" value={0} />
+            )}
+          </div>
+
+          <div>
+            <span className={label}>Carbon tax</span>
+            <div className="mt-2 flex gap-2">
+              {[true, false].map((v) => (
+                <button
+                  key={String(v)}
+                  type="button"
+                  onClick={() => setCarbonTaxApplied(v)}
+                  className={`flex-1 border px-3 py-2 text-sm ${
+                    carbonTaxApplied === v
+                      ? "border-sage bg-sage text-white"
+                      : "border-line bg-white text-ink/80"
+                  }`}
+                >
+                  {v ? "Yes" : "No"}
+                </button>
+              ))}
+            </div>
+            {carbonTaxApplied ? (
+              <div className="mt-2">
+                <label className={label} htmlFor="carbonTax">
+                  Amount ($)
+                </label>
+                <input
+                  id="carbonTax"
+                  name="carbonTax"
+                  type="number"
+                  min={0.01}
+                  step={0.01}
+                  value={carbonTax || ""}
+                  onChange={(e) => setCarbonTax(Number(e.target.value) || 0)}
+                  className={field}
+                  required
+                />
+              </div>
+            ) : (
+              <input type="hidden" name="carbonTax" value={0} />
+            )}
           </div>
 
           <div>
@@ -716,10 +836,10 @@ export function LoadForm({ rates, addresses, fees }: Props) {
             value={money(totals.fuelAmount)}
           />
           <Row label="Flat deck" value={money(flatDeckFee)} />
-          <Row label="Reload" value={money(fees.reloadFee)} />
+          <Row label="Reload" value={money(reloadFee)} />
           <Row label="Restack" value={money(restackFee)} />
-          <Row label="Blocking / bracing" value={money(fees.blockingFee)} />
-          <Row label="Carbon tax" value={money(fees.carbonTax)} />
+          <Row label="Blocking / bracing" value={money(blockingAmount)} />
+          <Row label="Carbon tax" value={money(carbonAmount)} />
           {crossDock ? (
             <Row label="Cross dock" value={money(crossDockAmount)} />
           ) : null}

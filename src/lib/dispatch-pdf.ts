@@ -179,7 +179,7 @@ export async function buildDispatchPdf(load: Load): Promise<Uint8Array> {
     `FLAT DECK DELIVERY: ${flatDeck}`,
   ];
   const transloadParts: string[] = [];
-  if (toNumber(load.reloadFee) > 0) {
+  if (load.reload && toNumber(load.reloadFee) > 0) {
     transloadParts.push(`RELOAD ${money(toNumber(load.reloadFee))}`);
   }
   if (load.restack && toNumber(load.restackFee) > 0) {
@@ -205,17 +205,21 @@ export async function buildDispatchPdf(load: Load): Promise<Uint8Array> {
       toNumber(load.baseRate),
     ],
     [`CP Fuel Surcharge (${fuelPct}%)`, toNumber(load.fuelAmount)],
-    ["Carbon Tax", toNumber(load.carbonTax)],
-    ["Blocking / Bracing", toNumber(load.blockingFee)],
   ];
   if (toNumber(load.flatDeckFee) > 0) {
     breakdown.push([`Flat Deck (${load.carrier})`, toNumber(load.flatDeckFee)]);
   }
-  if (toNumber(load.reloadFee) > 0) {
+  if (load.reload && toNumber(load.reloadFee) > 0) {
     breakdown.push(["Reload Fee", toNumber(load.reloadFee)]);
   }
-  if (toNumber(load.restackFee) > 0) {
+  if (load.restack && toNumber(load.restackFee) > 0) {
     breakdown.push(["Restack Fee", toNumber(load.restackFee)]);
+  }
+  if (load.blocking && toNumber(load.blockingFee) > 0) {
+    breakdown.push(["Blocking / Bracing", toNumber(load.blockingFee)]);
+  }
+  if (load.carbonTaxApplied && toNumber(load.carbonTax) > 0) {
+    breakdown.push(["Carbon Tax", toNumber(load.carbonTax)]);
   }
   if (load.crossDock && toNumber(load.crossDockAmount) > 0) {
     breakdown.push(["Cross Dock", toNumber(load.crossDockAmount)]);
