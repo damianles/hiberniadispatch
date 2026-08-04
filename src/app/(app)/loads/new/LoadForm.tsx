@@ -194,14 +194,15 @@ export function LoadForm({
 
   function pickAddress(a: AddressOption) {
     const fromMap = a.id.startsWith("osm-");
+    // Favourites: customer = company name, else nickname (how users label the customer).
+    // Map picks: never treat the OSM street label as the customer — keep what was typed.
+    const customerName = fromMap
+      ? delivery.deliveryCompany.trim()
+      : a.companyName?.trim() || a.nickname.trim();
+
     setDelivery({
       deliveryAddressId: fromMap ? "" : a.id,
-      // Keep typed customer name if the pick (e.g. OSM) has no company
-      deliveryCompany:
-        a.companyName?.trim() ||
-        delivery.deliveryCompany.trim() ||
-        a.nickname ||
-        "",
+      deliveryCompany: customerName,
       deliveryStreet: a.street,
       deliveryCity: a.city,
       deliveryProvince: a.province,
@@ -673,15 +674,21 @@ export function LoadForm({
             {saveAddress ? (
               <div className="min-w-[12rem] flex-1">
                 <label className={label} htmlFor="addressNickname">
-                  Nickname
+                  Favourite nickname
                 </label>
                 <input
+                  key="address-nickname"
                   id="addressNickname"
                   name="addressNickname"
                   required={saveAddress}
-                  placeholder="e.g. Stoney Creek yard"
+                  defaultValue={delivery.deliveryCompany}
+                  placeholder="Defaults to customer name"
                   className={field}
                 />
+                <p className="mt-1 text-xs text-ink/50">
+                  Customer/company name above is stored on the favourite and used
+                  on the dispatch when you pick it later.
+                </p>
               </div>
             ) : null}
           </div>

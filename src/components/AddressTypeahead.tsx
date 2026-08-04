@@ -134,30 +134,36 @@ export function AddressTypeahead({
               Saved
             </li>
           ) : null}
-          {saved.map((a) => (
-            <li key={`saved-${a.id}`}>
-              <button
-                type="button"
-                className="block w-full px-3 py-2 text-left text-sm hover:bg-paper-deep/60"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => {
-                  onPick(a);
-                  setOpen(false);
-                }}
-              >
-                <span className="font-medium text-sage-dark">
-                  {a.nickname}
-                  {a.isFavorite ? " ★" : ""}
-                </span>
-                <span className="mt-0.5 block text-xs text-ink/55">
-                  {[a.companyName, a.street, a.city, a.province]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </span>
-              </button>
-            </li>
-          ))}
-
+          {saved.map((a) => {
+            const customerLabel =
+              a.companyName?.trim() || a.nickname.trim() || "Saved address";
+            return (
+              <li key={`saved-${a.id}`}>
+                <button
+                  type="button"
+                  className="block w-full px-3 py-2 text-left text-sm hover:bg-paper-deep/60"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => {
+                    onPick(a);
+                    setOpen(false);
+                  }}
+                >
+                  <span className="font-medium text-sage-dark">
+                    {customerLabel}
+                    {a.isFavorite ? " ★" : ""}
+                  </span>
+                  <span className="mt-0.5 block text-xs text-ink/55">
+                    {[a.street, a.city, a.province].filter(Boolean).join(" · ")}
+                    {a.companyName?.trim() &&
+                    a.nickname.trim() &&
+                    a.nickname.trim() !== a.companyName.trim()
+                      ? ` · nick: ${a.nickname}`
+                      : ""}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
           {lookingUp ? (
             <li className="px-3 py-2 text-xs text-ink/45">Searching maps…</li>
           ) : null}

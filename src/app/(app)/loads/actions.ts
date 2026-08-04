@@ -194,7 +194,7 @@ export async function createLoadAction(
   if (data.saveAddress && data.addressNickname) {
     const address = await prisma.address.create({
       data: {
-        nickname: data.addressNickname,
+        nickname: data.addressNickname.trim() || data.deliveryCompany,
         companyName: data.deliveryCompany,
         street: data.deliveryStreet,
         city: data.deliveryCity,
@@ -437,7 +437,7 @@ export async function updateLoadAction(
   if (data.saveAddress && data.addressNickname) {
     const address = await prisma.address.create({
       data: {
-        nickname: data.addressNickname,
+        nickname: data.addressNickname.trim() || data.deliveryCompany,
         companyName: data.deliveryCompany,
         street: data.deliveryStreet,
         city: data.deliveryCity,
