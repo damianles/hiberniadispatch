@@ -84,7 +84,7 @@ export async function createLoadAction(
     pickupPhone: String(formData.get("pickupPhone") ?? "") || undefined,
 
     destination: formData.get("destination"),
-    deliveryCompany: String(formData.get("deliveryCompany") ?? "") || undefined,
+    deliveryCompany: String(formData.get("deliveryCompany") ?? ""),
     deliveryStreet: formData.get("deliveryStreet"),
     deliveryCity: formData.get("deliveryCity"),
     deliveryProvince: formData.get("deliveryProvince"),
@@ -326,7 +326,7 @@ export async function updateLoadAction(
     pickupPhone: String(formData.get("pickupPhone") ?? "") || undefined,
 
     destination: formData.get("destination"),
-    deliveryCompany: String(formData.get("deliveryCompany") ?? "") || undefined,
+    deliveryCompany: String(formData.get("deliveryCompany") ?? ""),
     deliveryStreet: formData.get("deliveryStreet"),
     deliveryCity: formData.get("deliveryCity"),
     deliveryProvince: formData.get("deliveryProvince"),

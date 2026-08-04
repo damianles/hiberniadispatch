@@ -251,10 +251,10 @@ export default async function LoadDetailPage({
             </div>
             <div>
               <p className="text-xs font-medium uppercase tracking-wide text-ink/45">
-                Delivery
+                Delivery customer
               </p>
               <p className="mt-1 font-medium">
-                {load.deliveryCompany || load.destination}
+                {load.deliveryCompany?.trim() || "—"}
               </p>
               <p className="text-ink/70">
                 {load.deliveryStreet}

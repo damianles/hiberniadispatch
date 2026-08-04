@@ -14,7 +14,10 @@ export const createLoadSchema = z.object({
   pickupPhone: z.string().trim().optional(),
 
   destination: z.string().trim().min(1, "Destination is required"),
-  deliveryCompany: z.string().trim().optional(),
+  deliveryCompany: z
+    .string()
+    .trim()
+    .min(1, "Delivery company / customer name is required"),
   deliveryStreet: z.string().trim().min(1, "Delivery street is required"),
   deliveryCity: z.string().trim().min(1),
   deliveryProvince: z.string().trim().min(1),

@@ -137,12 +137,8 @@ export async function buildDispatchPdf(load: Load): Promise<Uint8Array> {
 
   let ry = addrTop;
   ry = drawSectionHeader(page, rightX, ry, "DELIVERY ADDRESS", fontBold);
-  const deliveryTitle =
-    load.deliveryCompany?.trim() || load.destination;
-  ry = drawWrapped(page, rightX, ry, deliveryTitle, fontBold, 10, colW);
-  if (load.deliveryCompany?.trim()) {
-    ry = drawWrapped(page, rightX, ry, load.destination, font, 9, colW, muted);
-  }
+  const customerName = load.deliveryCompany?.trim() || "—";
+  ry = drawWrapped(page, rightX, ry, customerName, fontBold, 10, colW);
   ry = drawWrapped(page, rightX, ry, load.deliveryStreet, font, 10, colW);
   ry = drawWrapped(
     page,

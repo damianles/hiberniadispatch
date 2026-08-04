@@ -168,10 +168,7 @@ export default async function LoadsPage({
   }
   if (customer) {
     and.push({
-      OR: [
-        { pickupCompany: { contains: customer, mode: "insensitive" } },
-        { deliveryCompany: { contains: customer, mode: "insensitive" } },
-      ],
+      deliveryCompany: { contains: customer, mode: "insensitive" },
     });
   }
   if (createdBy) {
@@ -277,7 +274,7 @@ export default async function LoadsPage({
           <input
             name="customer"
             defaultValue={customer}
-            placeholder="Pickup or delivery company"
+            placeholder="Delivery company"
             className={fieldClass}
           />
         </label>
@@ -386,10 +383,13 @@ export default async function LoadsPage({
                     </span>
                   </div>
                   <p className="mt-1 text-sm text-ink/75">
-                    {load.pickupCity}
-                    {load.pickupProvince ? `, ${load.pickupProvince}` : ""}
-                    {" → "}
+                    {load.deliveryCompany?.trim() || "No customer"}
+                    {" · "}
                     {load.destination}
+                  </p>
+                  <p className="mt-0.5 text-xs text-ink/45">
+                    From {load.pickupCity}
+                    {load.pickupProvince ? `, ${load.pickupProvince}` : ""}
                   </p>
                   <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink/50">
                     <span>{format(load.vanDropDate, "MMM d, yyyy")}</span>
@@ -476,12 +476,9 @@ export default async function LoadsPage({
                     </td>
                     <td className="px-4 py-3">{load.destination}</td>
                     <td className="px-4 py-3">
-                      <span className="block">{load.pickupCompany}</span>
-                      {load.deliveryCompany ? (
-                        <span className="block text-xs text-ink/45">
-                          → {load.deliveryCompany}
-                        </span>
-                      ) : null}
+                      {load.deliveryCompany?.trim() || (
+                        <span className="text-ink/40">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-3">{load.carrier}</td>
                     <td className="px-4 py-3">

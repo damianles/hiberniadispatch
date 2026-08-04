@@ -196,7 +196,12 @@ export function LoadForm({
     const fromMap = a.id.startsWith("osm-");
     setDelivery({
       deliveryAddressId: fromMap ? "" : a.id,
-      deliveryCompany: a.companyName ?? "",
+      // Keep typed customer name if the pick (e.g. OSM) has no company
+      deliveryCompany:
+        a.companyName?.trim() ||
+        delivery.deliveryCompany.trim() ||
+        a.nickname ||
+        "",
       deliveryStreet: a.street,
       deliveryCity: a.city,
       deliveryProvince: a.province,
@@ -555,14 +560,15 @@ export function LoadForm({
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div>
             <label className={label} htmlFor="deliveryCompany">
-              Company / name
+              Customer / company name
             </label>
             <AddressTypeahead
               id="deliveryCompany"
               name="deliveryCompany"
               addresses={addresses}
               value={delivery.deliveryCompany}
-              placeholder="Type company, nickname, or street…"
+              placeholder="Delivery customer company name…"
+              required
               onChange={(v) =>
                 setDelivery((d) => ({
                   ...d,
@@ -572,7 +578,9 @@ export function LoadForm({
               }
               onPick={pickAddress}
             />
-          </div>
+            <p className="mt-1 text-xs text-ink/50">
+              This is the customer on the dispatch — not Transload (pickup).
+            </p>          </div>
           <div>
             <label className={label} htmlFor="deliveryRef">
               Delivery ref
