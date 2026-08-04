@@ -20,7 +20,7 @@ export default async function LoadDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ created?: string }>;
+  searchParams: Promise<{ created?: string; updated?: string }>;
 }) {
   const { id } = await params;
   const sp = await searchParams;
@@ -102,6 +102,12 @@ export default async function LoadDetailPage({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Link
+            href={`/loads/${load.id}/edit`}
+            className="border border-line px-3 py-2 text-sm text-ink/70 hover:border-sage"
+          >
+            Edit
+          </Link>
           <a
             href={`/api/loads/${load.id}/pdf`}
             target="_blank"
@@ -122,6 +128,11 @@ export default async function LoadDetailPage({
       {sp.created ? (
         <p className="mt-4 border border-sage/30 bg-sage/10 px-4 py-3 text-sm text-sage-dark">
           Load created successfully.
+        </p>
+      ) : null}
+      {sp.updated ? (
+        <p className="mt-4 border border-sage/30 bg-sage/10 px-4 py-3 text-sm text-sage-dark">
+          Load updated successfully.
         </p>
       ) : null}
 

@@ -4,15 +4,26 @@ import { useActionState, useMemo, useState } from "react";
 import { FuelPercentField } from "@/components/FuelPercentField";
 import { DestinationCombobox } from "@/components/DestinationCombobox";
 import { AddressTypeahead } from "@/components/AddressTypeahead";
-import { createLoadAction, type CreateLoadState } from "../actions";
+import {
+  createLoadAction,
+  updateLoadAction,
+  type CreateLoadState,
+} from "../actions";
 import { calcLoadTotal } from "@/lib/rates";
 import { money } from "@/lib/money";
 import { DEFAULT_PICKUP } from "@/lib/load-defaults";
-import type { AddressOption, FeeDefaults, RateOption } from "@/lib/load-types";
+import type {
+  AddressOption,
+  FeeDefaults,
+  LoadFormInitial,
+  RateOption,
+} from "@/lib/load-types";
 import {
   defaultEquipmentStyle,
   EQUIPMENT_STYLE_LABELS,
   EQUIPMENT_STYLES,
+  STATUS_LABELS,
+  STATUS_OPTIONS,
 } from "@/lib/load-labels";
 import type { Equipment, EquipmentStyle } from "@prisma/client";
 
@@ -26,44 +37,66 @@ type Props = {
   rates: RateOption[];
   addresses: AddressOption[];
   fees: FeeDefaults;
+  mode?: "create" | "edit";
+  loadId?: string;
+  initial?: LoadFormInitial;
 };
 
-export function LoadForm({ rates, addresses, fees }: Props) {
+export function LoadForm({
+  rates,
+  addresses,
+  fees,
+  mode = "create",
+  loadId,
+  initial,
+}: Props) {
+  const isEdit = mode === "edit";
+  const action = isEdit ? updateLoadAction : createLoadAction;
   const [state, formAction, pending] = useActionState<
     CreateLoadState | undefined,
     FormData
-  >(createLoadAction, undefined);
+  >(action, undefined);
 
-  const [carrier, setCarrier] = useState<"CDI" | "FORTIGO">("FORTIGO");
+  const [carrier, setCarrier] = useState<"CDI" | "FORTIGO">(
+    initial?.carrier ?? "FORTIGO",
+  );
   const [productClass, setProductClass] = useState<
     "SIZE_2X4_6_8" | "SIZE_2X10_12"
-  >("SIZE_2X4_6_8");
-  const [destination, setDestination] = useState("");
-  const [manualBaseRate, setManualBaseRate] = useState("");
-  const [equipment, setEquipment] = useState<Equipment>("FLAT_DECK");
-  const [equipmentStyle, setEquipmentStyle] =
-    useState<EquipmentStyle>("SUPER_B");
-  const [restack, setRestack] = useState(true);
-  const [reload, setReload] = useState(false);
-  const [blocking, setBlocking] = useState(false);
-  const [blockingFee, setBlockingFee] = useState(0);
-  const [carbonTaxApplied, setCarbonTaxApplied] = useState(false);
-  const [carbonTax, setCarbonTax] = useState(0);
-  const [crossDock, setCrossDock] = useState(false);
-  const [crossDockFee, setCrossDockFee] = useState(0);
-  const [fuelPercent, setFuelPercent] = useState(0);
+  >(initial?.productClass ?? "SIZE_2X4_6_8");
+  const [destination, setDestination] = useState(initial?.destination ?? "");
+  const [manualBaseRate, setManualBaseRate] = useState(
+    initial && initial.baseRate > 0 ? String(initial.baseRate) : "",
+  );
+  const [equipment, setEquipment] = useState<Equipment>(
+    initial?.equipment ?? "FLAT_DECK",
+  );
+  const [equipmentStyle, setEquipmentStyle] = useState<EquipmentStyle>(
+    initial?.equipmentStyle ?? "SUPER_B",
+  );
+  const [restack, setRestack] = useState(initial?.restack ?? true);
+  const [reload, setReload] = useState(initial?.reload ?? false);
+  const [blocking, setBlocking] = useState(initial?.blocking ?? false);
+  const [blockingFee, setBlockingFee] = useState(initial?.blockingFee ?? 0);
+  const [carbonTaxApplied, setCarbonTaxApplied] = useState(
+    initial?.carbonTaxApplied ?? false,
+  );
+  const [carbonTax, setCarbonTax] = useState(initial?.carbonTax ?? 0);
+  const [crossDock, setCrossDock] = useState(initial?.crossDock ?? false);
+  const [crossDockFee, setCrossDockFee] = useState(initial?.crossDockFee ?? 0);
+  const [fuelPercent, setFuelPercent] = useState(
+    initial?.fuelSurchargePercent ?? 0,
+  );
   const [saveAddress, setSaveAddress] = useState(false);
 
   const [delivery, setDelivery] = useState({
-    deliveryAddressId: "",
-    deliveryCompany: "",
-    deliveryStreet: "",
-    deliveryCity: "",
-    deliveryProvince: "",
-    deliveryPostal: "",
-    deliveryRef: "",
+    deliveryAddressId: initial?.deliveryAddressId ?? "",
+    deliveryCompany: initial?.deliveryCompany ?? "",
+    deliveryStreet: initial?.deliveryStreet ?? "",
+    deliveryCity: initial?.deliveryCity ?? "",
+    deliveryProvince: initial?.deliveryProvince ?? "",
+    deliveryPostal: initial?.deliveryPostal ?? "",
+    deliveryRef: initial?.deliveryRef ?? "",
   });
-
   const destinations = useMemo(() => {
     const set = new Set<string>();
     for (const r of rates) {
@@ -172,8 +205,14 @@ export function LoadForm({ rates, addresses, fees }: Props) {
     });
   }
 
+  const cancelHref = isEdit && loadId ? `/loads/${loadId}` : "/";
+  const statusDefault = initial?.status ?? "DRAFT";
+
   return (
     <form action={formAction} className="space-y-8">
+      {isEdit && loadId ? (
+        <input type="hidden" name="loadId" value={loadId} />
+      ) : null}
       <input type="hidden" name="baseRate" value={baseRate || ""} />
       <input type="hidden" name="flatDeckFee" value={flatDeckFee} />
       <input type="hidden" name="reloadFeeMaster" value={fees.reloadFee} />
@@ -219,6 +258,7 @@ export function LoadForm({ rates, addresses, fees }: Props) {
               name="outboundNumber"
               required
               placeholder="S555555"
+              defaultValue={initial?.outboundNumber}
               className={field}
             />
           </div>
@@ -226,7 +266,12 @@ export function LoadForm({ rates, addresses, fees }: Props) {
             <label className={label} htmlFor="inboundNumber">
               Inbound # (Mill / PO)
             </label>
-            <input id="inboundNumber" name="inboundNumber" className={field} />
+            <input
+              id="inboundNumber"
+              name="inboundNumber"
+              defaultValue={initial?.inboundNumber}
+              className={field}
+            />
           </div>
           <div>
             <label className={label} htmlFor="vanDropDate">
@@ -237,6 +282,7 @@ export function LoadForm({ rates, addresses, fees }: Props) {
               name="vanDropDate"
               type="date"
               required
+              defaultValue={initial?.vanDropDate}
               className={field}
             />
           </div>
@@ -244,14 +290,28 @@ export function LoadForm({ rates, addresses, fees }: Props) {
             <label className={label} htmlFor="status">
               Status
             </label>
-            <select id="status" name="status" defaultValue="DRAFT" className={field}>
-              <option value="DRAFT">Draft</option>
-              <option value="DISPATCHED">Dispatched</option>
+            <select
+              id="status"
+              name="status"
+              defaultValue={statusDefault}
+              className={field}
+            >
+              {isEdit ? (
+                STATUS_OPTIONS.map((s) => (
+                  <option key={s} value={s}>
+                    {STATUS_LABELS[s]}
+                  </option>
+                ))
+              ) : (
+                <>
+                  <option value="DRAFT">Draft</option>
+                  <option value="DISPATCHED">Dispatched</option>
+                </>
+              )}
             </select>
           </div>
         </div>
       </section>
-
       <section className="border border-line bg-white/80 p-5">
         <h2 className="font-brand text-xl text-burgundy">Carrier & rate</h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -412,7 +472,9 @@ export function LoadForm({ rates, addresses, fees }: Props) {
               id="pickupCompany"
               name="pickupCompany"
               required
-              defaultValue={DEFAULT_PICKUP.pickupCompany}
+              defaultValue={
+                initial?.pickupCompany ?? DEFAULT_PICKUP.pickupCompany
+              }
               className={field}
             />
           </div>
@@ -424,7 +486,9 @@ export function LoadForm({ rates, addresses, fees }: Props) {
               id="pickupStreet"
               name="pickupStreet"
               required
-              defaultValue={DEFAULT_PICKUP.pickupStreet}
+              defaultValue={
+                initial?.pickupStreet ?? DEFAULT_PICKUP.pickupStreet
+              }
               className={field}
             />
           </div>
@@ -436,7 +500,7 @@ export function LoadForm({ rates, addresses, fees }: Props) {
               id="pickupCity"
               name="pickupCity"
               required
-              defaultValue={DEFAULT_PICKUP.pickupCity}
+              defaultValue={initial?.pickupCity ?? DEFAULT_PICKUP.pickupCity}
               className={field}
             />
           </div>
@@ -448,7 +512,9 @@ export function LoadForm({ rates, addresses, fees }: Props) {
               id="pickupProvince"
               name="pickupProvince"
               required
-              defaultValue={DEFAULT_PICKUP.pickupProvince}
+              defaultValue={
+                initial?.pickupProvince ?? DEFAULT_PICKUP.pickupProvince
+              }
               className={field}
             />
           </div>
@@ -459,7 +525,9 @@ export function LoadForm({ rates, addresses, fees }: Props) {
             <input
               id="pickupPostal"
               name="pickupPostal"
-              defaultValue={DEFAULT_PICKUP.pickupPostal}
+              defaultValue={
+                initial?.pickupPostal ?? DEFAULT_PICKUP.pickupPostal
+              }
               className={field}
             />
           </div>
@@ -470,11 +538,12 @@ export function LoadForm({ rates, addresses, fees }: Props) {
             <input
               id="pickupPhone"
               name="pickupPhone"
-              defaultValue={DEFAULT_PICKUP.pickupPhone}
+              defaultValue={
+                initial?.pickupPhone ?? DEFAULT_PICKUP.pickupPhone
+              }
               className={field}
             />
-          </div>
-        </div>
+          </div>        </div>
       </section>
 
       <section className="border border-line bg-white/80 p-5">
@@ -624,6 +693,7 @@ export function LoadForm({ rates, addresses, fees }: Props) {
               required
               rows={3}
               placeholder="e.g. 2x12 #2btr 8/8 5/10…"
+              defaultValue={initial?.loadContents}
               className={field}
             />
             <p className="mt-1 text-xs text-ink/50">
@@ -640,6 +710,7 @@ export function LoadForm({ rates, addresses, fees }: Props) {
               type="number"
               min={1}
               placeholder="60000"
+              defaultValue={initial?.weightLbs ?? undefined}
               className={field}
             />
           </div>
@@ -853,7 +924,7 @@ export function LoadForm({ rates, addresses, fees }: Props) {
 
       <div className="flex flex-wrap items-center justify-end gap-3">
         <a
-          href="/"
+          href={cancelHref}
           className="border border-line px-4 py-2 text-sm text-ink/70 hover:border-sage"
         >
           Cancel
@@ -863,7 +934,7 @@ export function LoadForm({ rates, addresses, fees }: Props) {
           disabled={pending || !canSave}
           className="bg-burgundy px-5 py-2.5 text-sm font-medium text-white transition hover:bg-burgundy-hover disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {pending ? "Saving…" : "Create load"}
+          {pending ? "Saving…" : isEdit ? "Save changes" : "Create load"}
         </button>
       </div>
     </form>

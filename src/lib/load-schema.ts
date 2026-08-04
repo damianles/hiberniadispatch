@@ -56,3 +56,15 @@ export const createLoadSchema = z.object({
 });
 
 export type CreateLoadInput = z.infer<typeof createLoadSchema>;
+
+export const updateLoadSchema = createLoadSchema.extend({
+  status: z.enum([
+    "DRAFT",
+    "DISPATCHED",
+    "IN_TRANSIT",
+    "DELIVERED",
+    "CANCELLED",
+  ]),
+});
+
+export type UpdateLoadInput = z.infer<typeof updateLoadSchema>;
