@@ -34,6 +34,7 @@ function toOption(s: SuggestedAddress): AddressOption {
     city: s.city,
     province: s.province,
     postalCode: s.postalCode,
+    phone: null,
     isFavorite: Boolean(s.isFavorite),
   };
 }

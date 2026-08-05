@@ -22,6 +22,7 @@ export const createLoadSchema = z.object({
   deliveryCity: z.string().trim().min(1),
   deliveryProvince: z.string().trim().min(1),
   deliveryPostal: z.string().trim().optional(),
+  deliveryPhone: z.string().trim().optional(),
   deliveryRef: z.string().trim().optional(),
   deliveryAddressId: z.string().optional(),
 

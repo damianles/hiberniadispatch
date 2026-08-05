@@ -38,6 +38,7 @@ export default async function NewLoadPage() {
     city: a.city,
     province: a.province,
     postalCode: a.postalCode,
+    phone: a.phone,
     isFavorite: a.isFavorite,
   }));
 

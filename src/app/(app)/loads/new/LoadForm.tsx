@@ -95,6 +95,7 @@ export function LoadForm({
     deliveryCity: initial?.deliveryCity ?? "",
     deliveryProvince: initial?.deliveryProvince ?? "",
     deliveryPostal: initial?.deliveryPostal ?? "",
+    deliveryPhone: initial?.deliveryPhone ?? "",
     deliveryRef: initial?.deliveryRef ?? "",
   });
   const destinations = useMemo(() => {
@@ -207,6 +208,9 @@ export function LoadForm({
       deliveryCity: a.city,
       deliveryProvince: a.province,
       deliveryPostal: a.postalCode ?? "",
+      deliveryPhone: fromMap
+        ? delivery.deliveryPhone
+        : a.phone?.trim() || delivery.deliveryPhone,
       deliveryRef: delivery.deliveryRef,
     });
   }
@@ -658,6 +662,22 @@ export function LoadForm({
               value={delivery.deliveryPostal}
               onChange={(e) =>
                 setDelivery((d) => ({ ...d, deliveryPostal: e.target.value }))
+              }
+            />
+          </div>
+          <div>
+            <label className={label} htmlFor="deliveryPhone">
+              Delivery phone
+            </label>
+            <input
+              id="deliveryPhone"
+              name="deliveryPhone"
+              type="tel"
+              className={field}
+              value={delivery.deliveryPhone}
+              placeholder="Customer / site phone"
+              onChange={(e) =>
+                setDelivery((d) => ({ ...d, deliveryPhone: e.target.value }))
               }
             />
           </div>

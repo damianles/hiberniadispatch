@@ -149,6 +149,9 @@ export async function buildDispatchPdf(load: Load): Promise<Uint8Array> {
     10,
     colW,
   );
+  if (load.deliveryPhone) {
+    ry = drawWrapped(page, rightX, ry, load.deliveryPhone, font, 10, colW);
+  }
   if (load.deliveryRef) {
     ry = drawWrapped(
       page,

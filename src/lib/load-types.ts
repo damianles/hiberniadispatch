@@ -13,6 +13,7 @@ export type AddressOption = {
   city: string;
   province: string;
   postalCode: string | null;
+  phone: string | null;
   isFavorite: boolean;
 };
 
@@ -42,6 +43,7 @@ export type LoadFormInitial = {
   deliveryCity: string;
   deliveryProvince: string;
   deliveryPostal: string;
+  deliveryPhone: string;
   deliveryRef: string;
   carrier: "CDI" | "FORTIGO";
   productClass: "SIZE_2X4_6_8" | "SIZE_2X10_12";

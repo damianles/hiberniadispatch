@@ -51,6 +51,7 @@ export default async function EditLoadPage({
     city: a.city,
     province: a.province,
     postalCode: a.postalCode,
+    phone: a.phone,
     isFavorite: a.isFavorite,
   }));
 
@@ -82,6 +83,7 @@ export default async function EditLoadPage({
     deliveryCity: load.deliveryCity,
     deliveryProvince: load.deliveryProvince,
     deliveryPostal: load.deliveryPostal ?? "",
+    deliveryPhone: load.deliveryPhone ?? "",
     deliveryRef: load.deliveryRef ?? "",
     carrier: load.carrier,
     productClass,

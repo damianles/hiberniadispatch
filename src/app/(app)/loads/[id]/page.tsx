@@ -264,6 +264,12 @@ export default async function LoadDetailPage({
                 <br />
                 {load.deliveryCity}, {load.deliveryProvince}{" "}
                 {load.deliveryPostal || ""}
+                {load.deliveryPhone ? (
+                  <>
+                    <br />
+                    {load.deliveryPhone}
+                  </>
+                ) : null}
                 {load.deliveryRef ? (
                   <>
                     <br />

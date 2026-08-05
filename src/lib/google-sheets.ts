@@ -40,6 +40,7 @@ export const SHEET_HEADERS = [
   "Delivery city",
   "Delivery province",
   "Delivery postal",
+  "Delivery phone",
   "Delivery ref",
   // Contents
   "Load contents",
@@ -201,6 +202,7 @@ function loadToRow(load: Load): string[] {
     load.deliveryCity,
     load.deliveryProvince,
     load.deliveryPostal ?? "",
+    load.deliveryPhone ?? "",
     load.deliveryRef ?? "",
     load.loadContents,
     load.restack ? "Yes" : "No",

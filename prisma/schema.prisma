@@ -138,6 +138,7 @@ model Load {
   deliveryCity      String
   deliveryProvince  String
   deliveryPostal    String?
+  deliveryPhone     String?
   deliveryRef       String?
   deliveryAddressId String?
   deliveryAddress   Address? @relation("LoadDeliveryAddress", fields: [deliveryAddressId], references: [id])
