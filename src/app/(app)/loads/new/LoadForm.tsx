@@ -86,8 +86,18 @@ export function LoadForm({
   const [fuelPercent, setFuelPercent] = useState(
     initial?.fuelSurchargePercent ?? 0,
   );
+  // New loads: start Transload FSC linked to carrier Fuel % so it is not left at 0.
+  // Edits: keep whatever was saved; unlinking only when user edits Transload FSC.
   const [transloadFuelPercent, setTransloadFuelPercent] = useState(
-    initial?.transloadFuelSurchargePercent ?? 0,
+    initial?.transloadFuelSurchargePercent ??
+      initial?.fuelSurchargePercent ??
+      0,
+  );
+  const [transloadFuelLinked, setTransloadFuelLinked] = useState(
+    !initial ||
+      (initial.transloadFuelSurchargePercent === 0 &&
+        initial.fuelSurchargePercent === 0) ||
+      initial.transloadFuelSurchargePercent === initial.fuelSurchargePercent,
   );
   const [accessorialAmount, setAccessorialAmount] = useState(
     initial?.accessorialAmount ?? 0,
@@ -779,7 +789,10 @@ export function LoadForm({
           </div>
 
           <div className="sm:col-span-2">
-            <FuelPercentField value={fuelPercent} onChange={setFuelPercent} />
+            <FuelPercentField value={fuelPercent} onChange={(v) => {
+              setFuelPercent(v);
+              if (transloadFuelLinked) setTransloadFuelPercent(v);
+            }} />
           </div>
 
           <div>
@@ -845,12 +858,18 @@ export function LoadForm({
               id="transload-fuel-percent"
               label="Transload FSC %"
               value={transloadFuelPercent}
-              onChange={setTransloadFuelPercent}
+              onChange={(v) => {
+                setTransloadFuelLinked(false);
+                setTransloadFuelPercent(v);
+              }}
             />
             <p className="mt-1 text-xs text-ink/50">
               Applies only to reload + restack (not carrier base). Currently{" "}
               {money(totals.transloadFuelAmount)} on{" "}
               {money(reloadFee + restackFee)}.
+              {transloadFuelLinked
+                ? " Tracks carrier Fuel % until you change it here."
+                : null}
             </p>
           </div>
 
