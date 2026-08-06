@@ -9,35 +9,7 @@ import { requireUser, writeAudit } from "@/lib/session";
 import type { LoadStatus, ProductClass } from "@prisma/client";
 import { isStyleAllowed } from "@/lib/load-labels";
 import { rebuildLoadsSheet, syncLoadToSheet } from "@/lib/google-sheets";
-import { toNumber } from "@/lib/money";
 import type { Load } from "@prisma/client";
-
-/** Costing fields persisted in audit logs so we can recover / explain sheet drift. */
-function costingSnapshot(load: {
-  fuelSurchargePercent: unknown;
-  fuelAmount: unknown;
-  carrierTotal: unknown;
-  reloadFee: unknown;
-  restackFee: unknown;
-  transloadFuelSurchargePercent: unknown;
-  transloadFuelAmount: unknown;
-  transloadTotal: unknown;
-  accessorialAmount: unknown;
-  totalAmount: unknown;
-}) {
-  return {
-    fuelSurchargePercent: toNumber(load.fuelSurchargePercent),
-    fuelAmount: toNumber(load.fuelAmount),
-    carrierTotal: toNumber(load.carrierTotal),
-    reloadFee: toNumber(load.reloadFee),
-    restackFee: toNumber(load.restackFee),
-    transloadFuelSurchargePercent: toNumber(load.transloadFuelSurchargePercent),
-    transloadFuelAmount: toNumber(load.transloadFuelAmount),
-    transloadTotal: toNumber(load.transloadTotal),
-    accessorialAmount: toNumber(load.accessorialAmount),
-    totalAmount: toNumber(load.totalAmount),
-  };
-}
 
 async function mirrorLoadToSheet(userId: string, load: Load) {
   let result = await syncLoadToSheet(load);
@@ -345,7 +317,7 @@ export async function createLoadAction(
       outboundNumber: load.outboundNumber,
       carrier: load.carrier,
       destination: load.destination,
-      costing: costingSnapshot(load),
+      totalAmount,
     },
   });
 
@@ -620,8 +592,7 @@ export async function updateLoadAction(
       outboundNumber: load.outboundNumber,
       carrier: load.carrier,
       destination: load.destination,
-      before: costingSnapshot(existingLoad),
-      after: costingSnapshot(load),
+      totalAmount,
     },
   });
 
@@ -779,13 +750,7 @@ export async function rebuildAllLoadsSheetAction(
       action: "SHEET_REBUILT",
       entityType: "Sheet",
       entityId: "Loads",
-      details: {
-        rows: result.rows,
-        manual: true,
-        // Explicit: rebuild never mutates Postgres — sheet is a mirror only.
-        databaseUnchanged: true,
-        direction: "db_to_sheet",
-      },
+      details: { rows: result.rows, manual: true },
     });
     revalidatePath("/rates");
     return { ok: true, rows: result.rows };
