@@ -33,7 +33,11 @@ export function SheetSyncButton({ loadId, sheetsConfigured }: Props) {
         </p>
       ) : null}
       {state?.ok ? (
-        <p className="text-xs text-sage-dark">Synced to Google Sheet.</p>
+        <p className="text-xs text-sage-dark">
+          {state.rebuilt
+            ? "Sheet rebuilt (column layout refreshed) and load synced."
+            : "Synced to Google Sheet."}
+        </p>
       ) : null}
       {state?.error ? (
         <p className="text-xs text-burgundy">{state.error}</p>

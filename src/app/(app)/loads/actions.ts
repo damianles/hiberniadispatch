@@ -8,20 +8,44 @@ import { calcLoadTotal, normalizeFuelPercent } from "@/lib/rates";
 import { requireUser, writeAudit } from "@/lib/session";
 import type { LoadStatus, ProductClass } from "@prisma/client";
 import { isStyleAllowed } from "@/lib/load-labels";
-import { syncLoadToSheet } from "@/lib/google-sheets";
+import { rebuildLoadsSheet, syncLoadToSheet } from "@/lib/google-sheets";
 import type { Load } from "@prisma/client";
 
 async function mirrorLoadToSheet(userId: string, load: Load) {
-  const result = await syncLoadToSheet(load);
+  let result = await syncLoadToSheet(load);
+
+  if ("needsRebuild" in result && result.needsRebuild) {
+    const loads = await prisma.load.findMany({ orderBy: { createdAt: "asc" } });
+    const rebuilt = await rebuildLoadsSheet(loads);
+    if (rebuilt.synced) {
+      await writeAudit({
+        userId,
+        action: "SHEET_REBUILT",
+        entityType: "Load",
+        entityId: load.id,
+        details: {
+          outboundNumber: load.outboundNumber,
+          rows: rebuilt.rows,
+          reason: "header_mismatch",
+        },
+      });
+      return;
+    }
+    result = rebuilt;
+  }
+
   if (result.synced) {
     await writeAudit({
       userId,
       action: "SHEET_SYNCED",
       entityType: "Load",
       entityId: load.id,
-      details: { outboundNumber: load.outboundNumber, row: result.row },
+      details: {
+        outboundNumber: load.outboundNumber,
+        row: "row" in result ? result.row : undefined,
+      },
     });
-  } else if ("error" in result) {
+  } else if ("error" in result && result.error) {
     await writeAudit({
       userId,
       action: "SHEET_SYNC_FAILED",
@@ -641,7 +665,12 @@ export async function updateLoadStatusAction(
   return { ok: true };
 }
 
-export type ResyncSheetState = { error?: string; ok?: boolean; skipped?: boolean };
+export type ResyncSheetState = {
+  error?: string;
+  ok?: boolean;
+  skipped?: boolean;
+  rebuilt?: boolean;
+};
 
 export async function resyncLoadToSheetAction(
   _prev: ResyncSheetState | undefined,
@@ -654,14 +683,37 @@ export async function resyncLoadToSheetAction(
   const load = await prisma.load.findUnique({ where: { id: loadId } });
   if (!load) return { error: "Load not found." };
 
-  const result = await syncLoadToSheet(load);
+  let result = await syncLoadToSheet(load);
+
+  if ("needsRebuild" in result && result.needsRebuild) {
+    const loads = await prisma.load.findMany({ orderBy: { createdAt: "asc" } });
+    const rebuilt = await rebuildLoadsSheet(loads);
+    if (rebuilt.synced) {
+      await writeAudit({
+        userId: user.id,
+        action: "SHEET_REBUILT",
+        entityType: "Load",
+        entityId: load.id,
+        details: { rows: rebuilt.rows, manual: true },
+      });
+      revalidatePath(`/loads/${load.id}`);
+      revalidatePath("/rates");
+      return { ok: true, rebuilt: true };
+    }
+    result = rebuilt;
+  }
+
   if (result.synced) {
     await writeAudit({
       userId: user.id,
       action: "SHEET_SYNCED",
       entityType: "Load",
       entityId: load.id,
-      details: { outboundNumber: load.outboundNumber, row: result.row, manual: true },
+      details: {
+        outboundNumber: load.outboundNumber,
+        row: "row" in result ? result.row : undefined,
+        manual: true,
+      },
     });
     revalidatePath(`/loads/${load.id}`);
     return { ok: true };
@@ -674,4 +726,40 @@ export async function resyncLoadToSheetAction(
     };
   }
   return { error: "error" in result ? result.error : "Sync failed." };
+}
+
+export type RebuildSheetState = {
+  error?: string;
+  ok?: boolean;
+  skipped?: boolean;
+  rows?: number;
+};
+
+/** Rewrite the entire Loads sheet from the database (fixes column drift). */
+export async function rebuildAllLoadsSheetAction(
+  _prev: RebuildSheetState | undefined,
+  _formData: FormData,
+): Promise<RebuildSheetState> {
+  const user = await requireUser();
+  const loads = await prisma.load.findMany({ orderBy: { createdAt: "asc" } });
+  const result = await rebuildLoadsSheet(loads);
+
+  if (result.synced) {
+    await writeAudit({
+      userId: user.id,
+      action: "SHEET_REBUILT",
+      entityType: "Sheet",
+      entityId: "Loads",
+      details: { rows: result.rows, manual: true },
+    });
+    revalidatePath("/rates");
+    return { ok: true, rows: result.rows };
+  }
+  if ("skipped" in result && result.skipped) {
+    return {
+      skipped: true,
+      error: "Google Sheets is not configured.",
+    };
+  }
+  return { error: "error" in result ? result.error : "Rebuild failed." };
 }

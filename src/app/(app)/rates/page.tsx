@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { isSheetsConfigured } from "@/lib/google-sheets";
+import { RebuildSheetButton } from "./RebuildSheetButton";
 
 export default async function RatesPage() {
   const [feeSettings, rateCount, cdiCount, fortigoCount] = await Promise.all([
@@ -107,6 +108,7 @@ export default async function RatesPage() {
           App remains source of truth. When Sheets is configured, new loads and
           status changes upsert a row by outbound #.
         </p>
+        <RebuildSheetButton configured={sheetsOk} />
       </div>
     </section>
   );

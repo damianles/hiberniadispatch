@@ -11,30 +11,26 @@ import {
 import { toNumber } from "@/lib/money";
 
 /**
- * Column order mirrors the New Load form + dispatch PDF:
- * identity → shipment → pickup → delivery → contents → fees → totals → meta
+ * Column order mirrors the New Load form + dispatch PDF.
+ * When this list changes, sync rewrites the whole tab so old rows cannot drift.
  */
 export const SHEET_HEADERS = [
-  // Identity / lifecycle
   "Outbound #",
   "Status",
   "Van drop",
   "Carrier",
   "Inbound #",
-  // Shipment
   "Destination",
   "Equipment",
   "Equipment style",
   "Product class",
   "Weight (lbs)",
-  // Pickup (dispatch left column)
   "Pickup company",
   "Pickup street",
   "Pickup city",
   "Pickup province",
   "Pickup postal",
   "Pickup phone",
-  // Delivery (dispatch right column)
   "Delivery company",
   "Delivery street",
   "Delivery city",
@@ -42,11 +38,9 @@ export const SHEET_HEADERS = [
   "Delivery postal",
   "Delivery phone",
   "Delivery ref",
-  // Contents
   "Load contents",
   "Restack",
   "Cross dock",
-  // Rate breakdown (same lines as PDF)
   "Base rate",
   "Fuel %",
   "Fuel $",
@@ -63,7 +57,6 @@ export const SHEET_HEADERS = [
   "Accessorial $",
   "Accessorial description",
   "Combined total",
-  // Meta
   "Created at",
   "Updated at",
   "Load ID",
@@ -71,7 +64,6 @@ export const SHEET_HEADERS = [
 
 const COL_COUNT = SHEET_HEADERS.length;
 
-/** A=1 … Z=26, AA=27 … */
 function colLetter(n: number): string {
   let s = "";
   let x = n;
@@ -119,7 +111,6 @@ function loadServiceAccount(): { client_email: string; private_key: string } {
   throw new Error("Google service account credentials not configured");
 }
 
-/** Accepts raw JSON, minified JSON, or base64(JSON) — Vercel paste often breaks multi-line JSON. */
 function parseServiceAccountJson(raw: string): {
   client_email: string;
   private_key: string;
@@ -127,7 +118,6 @@ function parseServiceAccountJson(raw: string): {
   const cleaned = raw.replace(/^\uFEFF/, "").trim();
   const candidates = [cleaned];
 
-  // If wrapped in quotes from the env UI, unwrap once
   if (
     (cleaned.startsWith("'") && cleaned.endsWith("'")) ||
     (cleaned.startsWith('"') && cleaned.endsWith('"'))
@@ -135,7 +125,6 @@ function parseServiceAccountJson(raw: string): {
     candidates.push(cleaned.slice(1, -1));
   }
 
-  // Base64 of the whole JSON file (safest for Vercel)
   try {
     const decoded = Buffer.from(cleaned, "base64").toString("utf8").trim();
     if (decoded.startsWith("{")) candidates.push(decoded);
@@ -164,7 +153,7 @@ function parseServiceAccountJson(raw: string): {
 
   const msg = lastError instanceof Error ? lastError.message : String(lastError);
   throw new Error(
-    `Invalid GOOGLE_SERVICE_ACCOUNT_JSON (${msg}). Re-paste as one line, or set the value to base64 of the key file (PowerShell: [Convert]::ToBase64String([IO.File]::ReadAllBytes('key.json'))). Do not create a new key unless the file is lost.`,
+    `Invalid GOOGLE_SERVICE_ACCOUNT_JSON (${msg}). Re-paste as one line, or set the value to base64 of the key file.`,
   );
 }
 
@@ -183,11 +172,16 @@ function moneyCell(n: number) {
   return (Math.round(n * 100) / 100).toFixed(2);
 }
 
+/** Force text so Sheets does not auto-convert percents/dates into wrong types. */
+function textCell(value: string) {
+  return value === "" ? "" : `'${value}`;
+}
+
 function loadToRow(load: Load): string[] {
   return [
     load.outboundNumber,
     STATUS_LABELS[load.status] ?? load.status,
-    format(load.vanDropDate, "yyyy-MM-dd"),
+    textCell(format(load.vanDropDate, "yyyy-MM-dd")),
     load.carrier,
     load.inboundNumber ?? "",
     load.destination,
@@ -212,7 +206,7 @@ function loadToRow(load: Load): string[] {
     load.restack ? "Yes" : "No",
     load.crossDock ? "Yes" : "No",
     moneyCell(toNumber(load.baseRate)),
-    toNumber(load.fuelSurchargePercent).toFixed(2),
+    textCell(toNumber(load.fuelSurchargePercent).toFixed(2)),
     moneyCell(toNumber(load.fuelAmount)),
     moneyCell(toNumber(load.flatDeckFee)),
     moneyCell(toNumber(load.blockingFee)),
@@ -221,45 +215,56 @@ function loadToRow(load: Load): string[] {
     moneyCell(toNumber(load.carrierTotal)),
     moneyCell(toNumber(load.reloadFee)),
     moneyCell(toNumber(load.restackFee)),
-    toNumber(load.transloadFuelSurchargePercent).toFixed(2),
+    // FSC % is a small percent (e.g. 21.88), never a dollar total
+    textCell(toNumber(load.transloadFuelSurchargePercent).toFixed(2)),
     moneyCell(toNumber(load.transloadFuelAmount)),
     moneyCell(toNumber(load.transloadTotal)),
     moneyCell(toNumber(load.accessorialAmount)),
     load.accessorialDescription ?? "",
     moneyCell(toNumber(load.totalAmount)),
-    format(load.createdAt, "yyyy-MM-dd HH:mm"),
-    format(load.updatedAt, "yyyy-MM-dd HH:mm"),
+    textCell(format(load.createdAt, "yyyy-MM-dd HH:mm")),
+    textCell(format(load.updatedAt, "yyyy-MM-dd HH:mm")),
     load.id,
   ];
 }
 
-async function ensureHeader(sheets: sheets_v4.Sheets, spreadsheetId: string) {
-  const range = `${tabName()}!A1:${LAST_COL}1`;
+async function ensureTab(sheets: sheets_v4.Sheets, spreadsheetId: string) {
+  const tab = tabName();
+  const meta = await sheets.spreadsheets.get({ spreadsheetId });
+  const hasTab = meta.data.sheets?.some((s) => s.properties?.title === tab);
+  if (!hasTab) {
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId,
+      requestBody: {
+        requests: [{ addSheet: { properties: { title: tab } } }],
+      },
+    });
+  }
+  return tab;
+}
+
+async function headersMatch(
+  sheets: sheets_v4.Sheets,
+  spreadsheetId: string,
+  tab: string,
+): Promise<boolean> {
   const existing = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range,
+    range: `${tab}!A1:${LAST_COL}1`,
   });
   const first = existing.data.values?.[0] ?? [];
-  const matches =
+  return (
     first.length === SHEET_HEADERS.length &&
-    SHEET_HEADERS.every((h, i) => first[i] === h);
-
-  if (matches) return;
-
-  await sheets.spreadsheets.values.update({
-    spreadsheetId,
-    range,
-    valueInputOption: "RAW",
-    requestBody: { values: [Array.from(SHEET_HEADERS)] },
-  });
+    SHEET_HEADERS.every((h, i) => first[i] === h)
+  );
 }
 
 /**
- * Upsert a load into the mirror sheet (keyed by Outbound # in column A).
- * No-op if Sheets env is not configured.
+ * Wipe the Loads tab and rewrite headers + every load row in current column order.
+ * Use after column changes so old rows cannot sit under the wrong headers.
  */
-export async function syncLoadToSheet(load: Load): Promise<
-  | { synced: true; row: number }
+export async function rebuildLoadsSheet(loads: Load[]): Promise<
+  | { synced: true; rows: number }
   | { synced: false; skipped: true }
   | { synced: false; error: string }
 > {
@@ -270,20 +275,55 @@ export async function syncLoadToSheet(load: Load): Promise<
   try {
     const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID!.trim();
     const sheets = await getSheetsClient();
-    const tab = tabName();
+    const tab = await ensureTab(sheets, spreadsheetId);
 
-    const meta = await sheets.spreadsheets.get({ spreadsheetId });
-    const hasTab = meta.data.sheets?.some((s) => s.properties?.title === tab);
-    if (!hasTab) {
-      await sheets.spreadsheets.batchUpdate({
-        spreadsheetId,
-        requestBody: {
-          requests: [{ addSheet: { properties: { title: tab } } }],
-        },
-      });
+    // Clear a wide block so leftover cells from older (shorter) layouts disappear
+    await sheets.spreadsheets.values.clear({
+      spreadsheetId,
+      range: `${tab}!A:ZZ`,
+    });
+
+    const body = [
+      Array.from(SHEET_HEADERS),
+      ...loads.map((load) => loadToRow(load)),
+    ];
+
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: `${tab}!A1`,
+      valueInputOption: "USER_ENTERED",
+      requestBody: { values: body },
+    });
+
+    return { synced: true, rows: loads.length };
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Sheet rebuild failed";
+    return { synced: false, error: message };
+  }
+}
+
+/**
+ * Upsert a load (keyed by Outbound #).
+ * If headers are out of date, returns needsRebuild so the caller can rewrite the tab.
+ */
+export async function syncLoadToSheet(load: Load): Promise<
+  | { synced: true; row: number }
+  | { synced: false; skipped: true }
+  | { synced: false; needsRebuild: true }
+  | { synced: false; error: string }
+> {
+  if (!isSheetsConfigured()) {
+    return { synced: false, skipped: true };
+  }
+
+  try {
+    const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID!.trim();
+    const sheets = await getSheetsClient();
+    const tab = await ensureTab(sheets, spreadsheetId);
+
+    if (!(await headersMatch(sheets, spreadsheetId, tab))) {
+      return { synced: false, needsRebuild: true };
     }
-
-    await ensureHeader(sheets, spreadsheetId);
 
     const colA = await sheets.spreadsheets.values.get({
       spreadsheetId,
@@ -301,10 +341,15 @@ export async function syncLoadToSheet(load: Load): Promise<
     const row = loadToRow(load);
 
     if (rowIndex > 0) {
+      // Clear then write so leftover cells from older layouts cannot remain
+      await sheets.spreadsheets.values.clear({
+        spreadsheetId,
+        range: `${tab}!A${rowIndex}:ZZ${rowIndex}`,
+      });
       await sheets.spreadsheets.values.update({
         spreadsheetId,
-        range: `${tab}!A${rowIndex}:${LAST_COL}${rowIndex}`,
-        valueInputOption: "RAW",
+        range: `${tab}!A${rowIndex}`,
+        valueInputOption: "USER_ENTERED",
         requestBody: { values: [row] },
       });
       return { synced: true, row: rowIndex };
@@ -313,7 +358,7 @@ export async function syncLoadToSheet(load: Load): Promise<
     await sheets.spreadsheets.values.append({
       spreadsheetId,
       range: `${tab}!A:${LAST_COL}`,
-      valueInputOption: "RAW",
+      valueInputOption: "USER_ENTERED",
       insertDataOption: "INSERT_ROWS",
       requestBody: { values: [row] },
     });
