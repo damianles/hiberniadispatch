@@ -11,11 +11,31 @@ import { isStyleAllowed } from "@/lib/load-labels";
 import { rebuildLoadsSheet, syncLoadToSheet } from "@/lib/google-sheets";
 import type { Load } from "@prisma/client";
 
-async function mirrorLoadToSheet(userId: string, load: Load) {
+const sheetUserSelect = {
+  createdBy: { select: { email: true } },
+  updatedBy: { select: { email: true } },
+} as const;
+
+async function loadsForSheet() {
+  return prisma.load.findMany({
+    orderBy: { createdAt: "asc" },
+    include: sheetUserSelect,
+  });
+}
+
+async function loadForSheet(id: string) {
+  return prisma.load.findUniqueOrThrow({
+    where: { id },
+    include: sheetUserSelect,
+  });
+}
+
+async function mirrorLoadToSheet(userId: string, loadId: string) {
+  const load = await loadForSheet(loadId);
   let result = await syncLoadToSheet(load);
 
   if ("needsRebuild" in result && result.needsRebuild) {
-    const loads = await prisma.load.findMany({ orderBy: { createdAt: "asc" } });
+    const loads = await loadsForSheet();
     const rebuilt = await rebuildLoadsSheet(loads);
     if (rebuilt.synced) {
       await writeAudit({
@@ -321,7 +341,7 @@ export async function createLoadAction(
     },
   });
 
-  await mirrorLoadToSheet(user.id, load);
+  await mirrorLoadToSheet(user.id, load.id);
 
   revalidatePath("/");
   revalidatePath(`/loads/${load.id}`);
@@ -596,7 +616,7 @@ export async function updateLoadAction(
     },
   });
 
-  await mirrorLoadToSheet(user.id, load);
+  await mirrorLoadToSheet(user.id, load.id);
 
   revalidatePath("/");
   revalidatePath(`/loads/${load.id}`);
@@ -658,7 +678,7 @@ export async function updateLoadStatusAction(
     },
   });
 
-  await mirrorLoadToSheet(user.id, load);
+  await mirrorLoadToSheet(user.id, load.id);
 
   revalidatePath("/");
   revalidatePath(`/loads/${load.id}`);
@@ -680,13 +700,16 @@ export async function resyncLoadToSheetAction(
   const loadId = String(formData.get("loadId") ?? "");
   if (!loadId) return { error: "Missing load." };
 
-  const load = await prisma.load.findUnique({ where: { id: loadId } });
+  const load = await prisma.load.findUnique({
+    where: { id: loadId },
+    include: sheetUserSelect,
+  });
   if (!load) return { error: "Load not found." };
 
   let result = await syncLoadToSheet(load);
 
   if ("needsRebuild" in result && result.needsRebuild) {
-    const loads = await prisma.load.findMany({ orderBy: { createdAt: "asc" } });
+    const loads = await loadsForSheet();
     const rebuilt = await rebuildLoadsSheet(loads);
     if (rebuilt.synced) {
       await writeAudit({
@@ -741,7 +764,7 @@ export async function rebuildAllLoadsSheetAction(
   _formData: FormData,
 ): Promise<RebuildSheetState> {
   const user = await requireUser();
-  const loads = await prisma.load.findMany({ orderBy: { createdAt: "asc" } });
+  const loads = await loadsForSheet();
   const result = await rebuildLoadsSheet(loads);
 
   if (result.synced) {

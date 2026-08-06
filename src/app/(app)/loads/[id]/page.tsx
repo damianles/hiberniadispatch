@@ -30,7 +30,7 @@ export default async function LoadDetailPage({
       where: { id },
       include: {
         createdBy: { select: { name: true, email: true } },
-        updatedBy: { select: { name: true } },
+        updatedBy: { select: { name: true, email: true } },
       },
     }),
     prisma.contact.findMany({
@@ -150,8 +150,8 @@ export default async function LoadDetailPage({
             <StatusForm loadId={load.id} current={load.status} />
           </div>
           <p className="mt-3 text-xs text-ink/45">
-            Created by {load.createdBy.name} · Last updated by{" "}
-            {load.updatedBy.name}
+            Created by {load.createdBy.email} · Edited by{" "}
+            {load.updatedBy.email}
             {load.dispatchedAt
               ? ` · Dispatched ${format(load.dispatchedAt, "MMM d, yyyy h:mm a")}`
               : null}

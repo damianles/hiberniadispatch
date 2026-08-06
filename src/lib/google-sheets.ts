@@ -78,7 +78,9 @@ export const SHEET_HEADERS = [
   "Accessorial description",
   "Combined total",
   "Created at",
+  "Created by",
   "Updated at",
+  "Edited by",
   "Load ID",
 ] as const;
 
@@ -197,7 +199,12 @@ function textCell(value: string) {
   return value === "" ? "" : `'${value}`;
 }
 
-function loadToRow(load: Load): string[] {
+export type SheetLoad = Load & {
+  createdBy?: { email: string } | null;
+  updatedBy?: { email: string } | null;
+};
+
+function loadToRow(load: SheetLoad): string[] {
   return [
     load.outboundNumber,
     STATUS_LABELS[load.status] ?? load.status,
@@ -244,7 +251,9 @@ function loadToRow(load: Load): string[] {
     load.accessorialDescription ?? "",
     moneyCell(toNumber(load.totalAmount)),
     textCell(formatSheetDateTime(load.createdAt)),
+    load.createdBy?.email ?? "",
     textCell(formatSheetDateTime(load.updatedAt)),
+    load.updatedBy?.email ?? "",
     load.id,
   ];
 }
@@ -284,7 +293,7 @@ async function headersMatch(
  * Wipe the Loads tab and rewrite headers + every load row in current column order.
  * Use after column changes so old rows cannot sit under the wrong headers.
  */
-export async function rebuildLoadsSheet(loads: Load[]): Promise<
+export async function rebuildLoadsSheet(loads: SheetLoad[]): Promise<
   | { synced: true; rows: number }
   | { synced: false; skipped: true }
   | { synced: false; error: string }
@@ -327,7 +336,7 @@ export async function rebuildLoadsSheet(loads: Load[]): Promise<
  * Upsert a load (keyed by Outbound #).
  * If headers are out of date, returns needsRebuild so the caller can rewrite the tab.
  */
-export async function syncLoadToSheet(load: Load): Promise<
+export async function syncLoadToSheet(load: SheetLoad): Promise<
   | { synced: true; row: number }
   | { synced: false; skipped: true }
   | { synced: false; needsRebuild: true }
