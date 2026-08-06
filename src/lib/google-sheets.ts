@@ -10,6 +10,26 @@ import {
 } from "@/lib/load-labels";
 import { toNumber } from "@/lib/money";
 
+/** Alberta Mountain Time (MST/MDT) for sheet timestamps. */
+const SHEET_TIME_ZONE = "America/Edmonton";
+
+function formatSheetDateTime(date: Date): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: SHEET_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value ?? "";
+
+  return `${get("year")}-${get("month")}-${get("day")} ${get("hour")}:${get("minute")}`;
+}
+
 /**
  * Column order mirrors the New Load form + dispatch PDF.
  * When this list changes, sync rewrites the whole tab so old rows cannot drift.
@@ -223,8 +243,8 @@ function loadToRow(load: Load): string[] {
     moneyCell(toNumber(load.accessorialAmount)),
     load.accessorialDescription ?? "",
     moneyCell(toNumber(load.totalAmount)),
-    textCell(format(load.createdAt, "yyyy-MM-dd HH:mm")),
-    textCell(format(load.updatedAt, "yyyy-MM-dd HH:mm")),
+    textCell(formatSheetDateTime(load.createdAt)),
+    textCell(formatSheetDateTime(load.updatedAt)),
     load.id,
   ];
 }
