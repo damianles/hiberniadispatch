@@ -66,4 +66,7 @@ export type LoadFormInitial = {
   carbonTax: number;
   crossDock: boolean;
   crossDockFee: number;
+  transloadFuelSurchargePercent: number;
+  accessorialAmount: number;
+  accessorialDescription: string;
 };

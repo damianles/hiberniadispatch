@@ -264,6 +264,13 @@ export async function buildDispatchPdf(load: Load): Promise<Uint8Array> {
   if (load.restack && toNumber(load.restackFee) > 0) {
     transloadLines.push(["Restack Fee", toNumber(load.restackFee)]);
   }
+  const tlFuelPct = toNumber(load.transloadFuelSurchargePercent);
+  if (toNumber(load.transloadFuelAmount) > 0 || tlFuelPct > 0) {
+    transloadLines.push([
+      `Transload FSC (${tlFuelPct.toFixed(2)}%)`,
+      toNumber(load.transloadFuelAmount),
+    ]);
+  }
   if (transloadLines.length === 0) {
     page.drawText("None", { x: margin, y, size: 10, font, color: muted });
     y -= 14;
@@ -302,6 +309,19 @@ export async function buildDispatchPdf(load: Load): Promise<Uint8Array> {
     });
   }
   y -= 20;
+
+  if (toNumber(load.accessorialAmount) > 0) {
+    y = drawSectionHeader(page, margin, y, "ACCESSORIAL", fontBold);
+    const accLabel =
+      load.accessorialDescription?.trim() || "Accessorial";
+    page.drawText(accLabel, { x: margin, y, size: 10, font, color: ink });
+    {
+      const amt = money(toNumber(load.accessorialAmount));
+      const aw = font.widthOfTextAtSize(amt, 10);
+      page.drawText(amt, { x: amountX - aw, y, size: 10, font, color: ink });
+    }
+    y -= 20;
+  }
 
   page.drawLine({
     start: { x: margin, y: y + 10 },

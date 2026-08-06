@@ -76,6 +76,10 @@ export default async function LoadDetailPage({
       label: "Restack",
       value: load.restack ? money(n(load.restackFee)) : "No",
     },
+    {
+      label: `Transload FSC (${n(load.transloadFuelSurchargePercent).toFixed(2)}%)`,
+      value: money(n(load.transloadFuelAmount)),
+    },
   ];
 
   const contactOptions = contacts.map((c) => ({
@@ -328,6 +332,20 @@ export default async function LoadDetailPage({
             <dt>Transload total</dt>
             <dd>{money(n(load.transloadTotal))}</dd>
           </div>
+
+          {n(load.accessorialAmount) > 0 ? (
+            <>
+              <p className="pt-3 text-xs font-medium uppercase tracking-wide text-ink/45">
+                Accessorial
+              </p>
+              <div className="flex justify-between border-b border-line/50 py-1.5">
+                <dt className="text-ink/70">
+                  {load.accessorialDescription?.trim() || "Accessorial"}
+                </dt>
+                <dd>{money(n(load.accessorialAmount))}</dd>
+              </div>
+            </>
+          ) : null}
 
           <div className="flex justify-between border-t border-line pt-3 text-base font-medium">
             <dt>Combined total</dt>

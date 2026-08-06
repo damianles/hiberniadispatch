@@ -101,6 +101,9 @@ export default async function EditLoadPage({
     carbonTax: toNumber(load.carbonTax),
     crossDock: load.crossDock,
     crossDockFee: toNumber(load.crossDockFee ?? load.crossDockAmount),
+    transloadFuelSurchargePercent: toNumber(load.transloadFuelSurchargePercent),
+    accessorialAmount: toNumber(load.accessorialAmount),
+    accessorialDescription: load.accessorialDescription ?? "",
   };
 
   return (

@@ -113,20 +113,30 @@ export async function createLoadAction(
     fuelSurchargePercent: normalizeFuelPercent(
       formNum(formData.get("fuelSurchargePercent")),
     ),
+    transloadFuelSurchargePercent: normalizeFuelPercent(
+      formNum(formData.get("transloadFuelSurchargePercent")),
+    ),
     baseRate: formNum(formData.get("baseRate")),
     flatDeckFee: equipment === "FLAT_DECK" ? flatDeckMaster : 0,
     reloadFee: reload ? reloadFeeMaster : 0,
     restackFee: restack ? restackFeeMaster : 0,
     blockingFee: blocking ? formNum(formData.get("blockingFee")) : 0,
     carbonTax: carbonTaxApplied ? formNum(formData.get("carbonTax")) : 0,
+    accessorialAmount: formNum(formData.get("accessorialAmount")),
+    accessorialDescription:
+      String(formData.get("accessorialDescription") ?? "").trim() || undefined,
 
     saveAddress: formBool(formData.get("saveAddress")),
     addressNickname: String(formData.get("addressNickname") ?? "") || undefined,
   });
 
   if (!parsed.success) {
+    const accessorialMsg = parsed.error.flatten().fieldErrors
+      .accessorialDescription?.[0];
     return {
-      error: "Please fix the highlighted fields.",
+      error:
+        accessorialMsg ??
+        "Please fix the highlighted fields.",
       fieldErrors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
     };
   }
@@ -172,7 +182,14 @@ export async function createLoadAction(
     };
   }
   const crossDockAmount = data.crossDock ? (data.crossDockFee ?? 0) : 0;
-  const { fuelAmount, carrierTotal, transloadTotal, totalAmount } = calcLoadTotal({
+  const {
+    fuelAmount,
+    carrierTotal,
+    transloadFuelAmount,
+    transloadTotal,
+    accessorialAmount,
+    totalAmount,
+  } = calcLoadTotal({
     baseRate,
     fuelSurchargePercent: data.fuelSurchargePercent,
     flatDeckFee: data.flatDeckFee,
@@ -181,6 +198,8 @@ export async function createLoadAction(
     blockingFee: data.blockingFee,
     carbonTax: data.carbonTax,
     crossDockAmount,
+    transloadFuelSurchargePercent: data.transloadFuelSurchargePercent,
+    accessorialAmount: data.accessorialAmount,
   });
 
   const existing = await prisma.load.findUnique({
@@ -252,7 +271,12 @@ export async function createLoadAction(
       carbonTax: data.carbonTax,
       crossDockAmount,
       carrierTotal,
+      transloadFuelSurchargePercent: data.transloadFuelSurchargePercent,
+      transloadFuelAmount,
       transloadTotal,
+      accessorialAmount,
+      accessorialDescription:
+        accessorialAmount > 0 ? data.accessorialDescription?.trim() || null : null,
       totalAmount,
       createdById: user.id,
       updatedById: user.id,
@@ -360,20 +384,30 @@ export async function updateLoadAction(
     fuelSurchargePercent: normalizeFuelPercent(
       formNum(formData.get("fuelSurchargePercent")),
     ),
+    transloadFuelSurchargePercent: normalizeFuelPercent(
+      formNum(formData.get("transloadFuelSurchargePercent")),
+    ),
     baseRate: formNum(formData.get("baseRate")),
     flatDeckFee: equipment === "FLAT_DECK" ? flatDeckMaster : 0,
     reloadFee: reload ? reloadFeeMaster : 0,
     restackFee: restack ? restackFeeMaster : 0,
     blockingFee: blocking ? formNum(formData.get("blockingFee")) : 0,
     carbonTax: carbonTaxApplied ? formNum(formData.get("carbonTax")) : 0,
+    accessorialAmount: formNum(formData.get("accessorialAmount")),
+    accessorialDescription:
+      String(formData.get("accessorialDescription") ?? "").trim() || undefined,
 
     saveAddress: formBool(formData.get("saveAddress")),
     addressNickname: String(formData.get("addressNickname") ?? "") || undefined,
   });
 
   if (!parsed.success) {
+    const accessorialMsg = parsed.error.flatten().fieldErrors
+      .accessorialDescription?.[0];
     return {
-      error: "Please fix the highlighted fields.",
+      error:
+        accessorialMsg ??
+        "Please fix the highlighted fields.",
       fieldErrors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
     };
   }
@@ -417,7 +451,14 @@ export async function updateLoadAction(
     };
   }
   const crossDockAmount = data.crossDock ? (data.crossDockFee ?? 0) : 0;
-  const { fuelAmount, carrierTotal, transloadTotal, totalAmount } = calcLoadTotal({
+  const {
+    fuelAmount,
+    carrierTotal,
+    transloadFuelAmount,
+    transloadTotal,
+    accessorialAmount,
+    totalAmount,
+  } = calcLoadTotal({
     baseRate,
     fuelSurchargePercent: data.fuelSurchargePercent,
     flatDeckFee: data.flatDeckFee,
@@ -426,6 +467,8 @@ export async function updateLoadAction(
     blockingFee: data.blockingFee,
     carbonTax: data.carbonTax,
     crossDockAmount,
+    transloadFuelSurchargePercent: data.transloadFuelSurchargePercent,
+    accessorialAmount: data.accessorialAmount,
   });
 
   const duplicate = await prisma.load.findFirst({
@@ -501,7 +544,12 @@ export async function updateLoadAction(
       carbonTax: data.carbonTax,
       crossDockAmount,
       carrierTotal,
+      transloadFuelSurchargePercent: data.transloadFuelSurchargePercent,
+      transloadFuelAmount,
       transloadTotal,
+      accessorialAmount,
+      accessorialDescription:
+        accessorialAmount > 0 ? data.accessorialDescription?.trim() || null : null,
       totalAmount,
       updatedById: user.id,
       dispatchedAt:

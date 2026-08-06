@@ -86,6 +86,15 @@ export function LoadForm({
   const [fuelPercent, setFuelPercent] = useState(
     initial?.fuelSurchargePercent ?? 0,
   );
+  const [transloadFuelPercent, setTransloadFuelPercent] = useState(
+    initial?.transloadFuelSurchargePercent ?? 0,
+  );
+  const [accessorialAmount, setAccessorialAmount] = useState(
+    initial?.accessorialAmount ?? 0,
+  );
+  const [accessorialDescription, setAccessorialDescription] = useState(
+    initial?.accessorialDescription ?? "",
+  );
   const [saveAddress, setSaveAddress] = useState(false);
 
   const [delivery, setDelivery] = useState({
@@ -139,7 +148,11 @@ export function LoadForm({
   const baseRate = matchedRate
     ? matchedRate.baseRate
     : Number(manualBaseRate) || 0;
-  const canSave = Boolean(destination.trim() && baseRate > 0);
+  const canSave = Boolean(
+    destination.trim() &&
+      baseRate > 0 &&
+      (accessorialAmount <= 0 || accessorialDescription.trim()),
+  );
 
   const totals = useMemo(
     () =>
@@ -152,6 +165,8 @@ export function LoadForm({
         blockingFee: blockingAmount,
         carbonTax: carbonAmount,
         crossDockAmount,
+        transloadFuelSurchargePercent: transloadFuelPercent,
+        accessorialAmount,
       }),
     [
       baseRate,
@@ -162,6 +177,8 @@ export function LoadForm({
       blockingAmount,
       carbonAmount,
       crossDockAmount,
+      transloadFuelPercent,
+      accessorialAmount,
     ],
   );
 
@@ -228,6 +245,17 @@ export function LoadForm({
       <input type="hidden" name="reloadFeeMaster" value={fees.reloadFee} />
       <input type="hidden" name="restackFeeMaster" value={fees.restackFee} />
       <input type="hidden" name="fuelSurchargePercent" value={fuelPercent} />
+      <input
+        type="hidden"
+        name="transloadFuelSurchargePercent"
+        value={transloadFuelPercent}
+      />
+      <input type="hidden" name="accessorialAmount" value={accessorialAmount} />
+      <input
+        type="hidden"
+        name="accessorialDescription"
+        value={accessorialDescription}
+      />
       <input type="hidden" name="carrier" value={carrier} />
       <input type="hidden" name="productClass" value={productClass} />
       <input type="hidden" name="equipment" value={equipment} />
@@ -799,17 +827,70 @@ export function LoadForm({
                     </button>
                   ))}
                 </div>
-                <p className="mt-1 text-xs text-ink/50">
-                  {restack
-                    ? `Transload fee ${money(fees.restackFee)}`
-                    : "Not included (Transload)"}
-                </p>
+            <p className="mt-1 text-xs text-ink/50">
+              {restack
+                ? `Transload fee ${money(fees.restackFee)}`
+                : "Not included (Transload)"}
+            </p>
               </>
             ) : (
               <p className="mt-2 border border-line bg-paper-deep/40 px-3 py-2 text-sm text-ink/60">
                 Not available for 2x10 / 12
               </p>
             )}
+          </div>
+
+          <div className="sm:col-span-2">
+            <FuelPercentField
+              id="transload-fuel-percent"
+              label="Transload FSC %"
+              value={transloadFuelPercent}
+              onChange={setTransloadFuelPercent}
+            />
+            <p className="mt-1 text-xs text-ink/50">
+              Applies only to reload + restack (not carrier base). Currently{" "}
+              {money(totals.transloadFuelAmount)} on{" "}
+              {money(reloadFee + restackFee)}.
+            </p>
+          </div>
+
+          <div className="sm:col-span-2 border-t border-line/60 pt-4">
+            <span className={label}>Accessorial (adhoc)</span>
+            <div className="mt-2 grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className={label} htmlFor="accessorialAmountVisible">
+                  Amount ($)
+                </label>
+                <input
+                  id="accessorialAmountVisible"
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  className={field}
+                  value={accessorialAmount || ""}
+                  onChange={(e) =>
+                    setAccessorialAmount(Number(e.target.value) || 0)
+                  }
+                />
+              </div>
+              <div>
+                <label className={label} htmlFor="accessorialDescriptionVisible">
+                  Description {accessorialAmount > 0 ? "(required)" : ""}
+                </label>
+                <input
+                  id="accessorialDescriptionVisible"
+                  className={field}
+                  value={accessorialDescription}
+                  required={accessorialAmount > 0}
+                  placeholder="e.g. Detention, after-hours gate…"
+                  onChange={(e) => setAccessorialDescription(e.target.value)}
+                />
+              </div>
+            </div>
+            <p className="mt-1 text-xs text-ink/50">
+              Manual add-on outside VFS/CDI and Transload fee lines. Description
+              is required whenever an amount is entered.
+            </p>
           </div>
 
           <div>
@@ -963,10 +1044,26 @@ export function LoadForm({
           </p>
           <Row label="Reload" value={money(reloadFee)} />
           <Row label="Restack" value={money(restackFee)} />
+          <Row
+            label={`Transload FSC (${transloadFuelPercent.toFixed(2)}%)`}
+            value={money(totals.transloadFuelAmount)}
+          />
           <div className="flex justify-between border-t border-line pt-2 font-medium">
             <dt>Transload total</dt>
             <dd>{money(totals.transloadTotal)}</dd>
           </div>
+
+          {accessorialAmount > 0 ? (
+            <>
+              <p className="pt-3 text-xs font-medium uppercase tracking-wide text-ink/45">
+                Accessorial
+              </p>
+              <Row
+                label={accessorialDescription.trim() || "Accessorial"}
+                value={money(accessorialAmount)}
+              />
+            </>
+          ) : null}
 
           <div className="flex justify-between border-t border-line pt-3 text-base font-medium">
             <dt>Combined total</dt>

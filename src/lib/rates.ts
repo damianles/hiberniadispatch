@@ -1,9 +1,11 @@
 /**
  * Costing:
  * - Carrier (VFS / CDI): base + fuel$ + flat deck + blocking + carbon + cross dock
- * - Transload Logistics: reload + restack (only when selected)
- * - Combined total = carrier + transload
- * Fuel % applies to base rate only.
+ * - Transload Logistics: reload + restack + FSC% on (reload+restack) only
+ * - Accessorial: manual adhoc amount (description required when > 0)
+ * - Combined total = carrier + transload + accessorial
+ * Carrier fuel % applies to base rate only.
+ * Transload FSC % applies to reload+restack only.
  */
 export type LoadRateInput = {
   baseRate: number;
@@ -14,6 +16,8 @@ export type LoadRateInput = {
   blockingFee: number;
   carbonTax: number;
   crossDockAmount: number;
+  transloadFuelSurchargePercent: number;
+  accessorialAmount: number;
 };
 
 export function normalizeFuelPercent(value: number): number {
@@ -21,9 +25,9 @@ export function normalizeFuelPercent(value: number): number {
   return Math.round(Math.min(100, Math.max(0, value)) * 100) / 100;
 }
 
-export function calcFuelAmount(baseRate: number, fuelSurchargePercent: number) {
+export function calcFuelAmount(base: number, fuelSurchargePercent: number) {
   const pct = normalizeFuelPercent(fuelSurchargePercent);
-  return roundMoney(baseRate * (pct / 100));
+  return roundMoney(base * (pct / 100));
 }
 
 export function calcLoadTotal(input: LoadRateInput) {
@@ -36,9 +40,27 @@ export function calcLoadTotal(input: LoadRateInput) {
       input.carbonTax +
       input.crossDockAmount,
   );
-  const transloadTotal = roundMoney(input.reloadFee + input.restackFee);
-  const totalAmount = roundMoney(carrierTotal + transloadTotal);
-  return { fuelAmount, carrierTotal, transloadTotal, totalAmount };
+
+  const transloadFees = roundMoney(input.reloadFee + input.restackFee);
+  const transloadFuelAmount = calcFuelAmount(
+    transloadFees,
+    input.transloadFuelSurchargePercent,
+  );
+  const transloadTotal = roundMoney(transloadFees + transloadFuelAmount);
+
+  const accessorialAmount = roundMoney(Math.max(0, input.accessorialAmount));
+  const totalAmount = roundMoney(
+    carrierTotal + transloadTotal + accessorialAmount,
+  );
+
+  return {
+    fuelAmount,
+    carrierTotal,
+    transloadFuelAmount,
+    transloadTotal,
+    accessorialAmount,
+    totalAmount,
+  };
 }
 
 /** Display label for the carrier bucket (Fortigo = VFS, CDI = CDI). */

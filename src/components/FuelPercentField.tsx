@@ -17,6 +17,7 @@ type FuelPercentFieldProps = {
   onChange: (value: number) => void;
   disabled?: boolean;
   className?: string;
+  label?: string;
 };
 
 /**
@@ -31,6 +32,7 @@ export function FuelPercentField({
   onChange,
   disabled,
   className = "",
+  label = "Fuel %",
 }: FuelPercentFieldProps) {
   const normalized = normalizeFuelPercent(value);
   const whole = Math.floor(normalized);
@@ -52,7 +54,7 @@ export function FuelPercentField({
     <div className={`flex flex-wrap items-end gap-2 ${className}`}>
       <div className="flex flex-col gap-1">
         <label htmlFor={`${id}-whole`} className="text-xs font-medium text-ink/70">
-          Fuel %
+          {label}
         </label>
         <div className="flex items-center gap-1">
           <select

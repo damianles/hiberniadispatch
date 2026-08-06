@@ -168,7 +168,11 @@ model Load {
   carbonTax             Decimal
   crossDockAmount       Decimal
   carrierTotal          Decimal
+  transloadFuelSurchargePercent Decimal @default(0)
+  transloadFuelAmount   Decimal @default(0)
   transloadTotal        Decimal
+  accessorialAmount     Decimal @default(0)
+  accessorialDescription String?
   totalAmount           Decimal
 
   createdById  String
