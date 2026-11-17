@@ -46,7 +46,7 @@ async function main() {
   // Fuel is selected per load on the form.
   // Confirmed master fees (sheet may drift; these are the locked amounts).
   const flatDeckCdi = num(cell(sheet, 5, 2)) ?? 375;
-  const flatDeckFortigo = num(cell(sheet, 5, 9)) ?? 450;
+  const flatDeckFortigo = num(cell(sheet, 5, 9)) ?? 510;
   const reloadFee = num(cell(sheet, 6, 2)) ?? 500;
   const restackFee = num(cell(sheet, 7, 2)) ?? 100;
   // Blocking & carbon are manual per load — store 0 in fee master.

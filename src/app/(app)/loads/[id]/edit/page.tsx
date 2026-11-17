@@ -57,7 +57,7 @@ export default async function EditLoadPage({
 
   const fees = {
     flatDeckCdi: toNumber(feeSettings.flatDeckCdi) || 375,
-    flatDeckFortigo: toNumber(feeSettings.flatDeckFortigo) || 450,
+    flatDeckFortigo: toNumber(feeSettings.flatDeckFortigo) || 510,
     reloadFee: toNumber(feeSettings.reloadFee) || 500,
     restackFee: toNumber(feeSettings.restackFee) || 100,
   };

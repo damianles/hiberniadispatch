@@ -11,7 +11,7 @@ export const DEFAULT_PICKUP = {
 /** Confirmed fee master amounts (rate sheet). Blocking & carbon are manual per load. */
 export const FEE_AMOUNTS = {
   flatDeckCdi: 375,
-  flatDeckFortigo: 450,
+  flatDeckFortigo: 510,
   reloadFee: 500,
   restackFee: 100,
 } as const;
